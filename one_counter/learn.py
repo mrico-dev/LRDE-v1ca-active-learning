@@ -331,7 +331,7 @@ def delete_all_superior_levels(graph, cv):
 def get_sub_graph(level1, level2, graph):
     """
     Get a graph with only states of of level 1 to level 2
-    Transitions from level2 are removed
+    Transitions from level2 are removed (not anymore)
     """
     # Remove all states < level 1 or > level2
     res = copy.deepcopy(graph)
@@ -341,9 +341,9 @@ def get_sub_graph(level1, level2, graph):
             res.remove_state(q)
 
     # Removing transition from level 2
-    for e in list(res.edges):
-        if int(e[0][:(e[0].index('_'))]) == level2:
-            res.edges.remove(e)
+    #for e in list(res.edges):
+    #    if int(e[0][:(e[0].index('_'))]) == level2:
+    #        res.edges.remove(e)
 
     return res
 
@@ -361,7 +361,13 @@ def is_periodic(l1, l2, graph: oc.OneCounter, alphabet):
     graph1 = get_sub_graph(l1, l2, graph)
     graph2 = get_sub_graph(l2, l2 + k, graph)
 
-    return oc.is_isomorphic(graph1, graph2, l1, k)
+    res = oc.is_isomorphic(graph1, graph2, l1, k)
+
+    if res is not None:
+        display.export_one_counter(graph1, "subgraph1")
+        display.export_one_counter(graph2, "subgraph2")
+
+    return res
 
 
 def delete_all_superior_levels(graph, cv):
@@ -403,8 +409,9 @@ def detect_period_and_loop_back(graph: oc.OneCounter, RST, alphabet):
             couples = is_periodic(m, m + k, graph, alphabet)
             if couples is not None:
                 print("A periodic pattern between level " + str(m) + " and level '" + str(m + k) + "' was found.")
+                print("Couples: " + str(couples))
                 delete_all_superior_levels(graph, m + k)
-                link_period(graph, couple, alphabet)
+                link_period(graph, couples, alphabet)
                 return 
         
     print("No periodic subgraph found. Showing behaviour graph as it is.")
@@ -436,8 +443,8 @@ def RST_to_one_counter(RST, alphabet, teacher):
 
     behaviour = oc.OneCounter(states, [init], final, alphabet[0], alphabet[1], transitions)
     display.export_one_counter(behaviour, "behaviour_graph_unminimized")
-    behaviour.remove_useless_states()
-    display.export_one_counter(behaviour, "behaviour_graph")
+    #behaviour.remove_useless_states()
+    #display.export_one_counter(behaviour, "behaviour_graph")
     detect_period_and_loop_back(behaviour, no_dup_RST, alphabet)
     display.export_one_counter(behaviour, "one_counter_unminimized")
     behaviour.remove_useless_states()

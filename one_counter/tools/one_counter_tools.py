@@ -2,7 +2,7 @@ from graphviz import Digraph
 from .display_automaton import export_automaton
 
 
-def get_edges_from_state(states, edges, src):
+def get_edges_from_state(edges, src):
     """
     Get all edges which initial state is src
     """
@@ -17,9 +17,20 @@ def get_next(states, edges, src, a):
     """
     Get the transtion from state src using symbol a
     """
-    for e in get_edges_from_state(states, edges, src):
+    for e in get_edges_from_state(edges, src):
         if e[1] == a:
             return e[2]
+    return None
+
+
+def get_prev(states, edges, dest, a):
+    """
+    Get the reverse transition from state dest to src using a
+    """
+    for e in edges:
+        if e[2] == dest and e[1] == a:
+            return e[0]
+
     return None
 
 
@@ -31,17 +42,6 @@ def get_dests_from_state(states, edges, src):
     for e in edges:
         if e[0] == src:
             res.append(e[2])
-    return res
-
-
-def get_edges_from_state(edges, src):
-    """
-    Get all edges which source is src
-    """
-    res = []
-    for e in edges:
-        if e[0] == src:
-            res.append(e)
     return res
 
 
@@ -64,6 +64,10 @@ def _is_state_isomorphic(g1, g2, state1, state2):
     queue2 = [state2]
     visited = set()
 
+    # Specific case of non isomorphism
+    if (state1 in g1.final_states) ^ (state2 in g2.final_states):
+        return False
+
     while queue1 != [] and queue2 != []:
 
         q1 = queue1.pop()
@@ -75,12 +79,26 @@ def _is_state_isomorphic(g1, g2, state1, state2):
             next1 = get_next(g1.states, g1.edges, q1, a)
             next2 = get_next(g2.states, g2.edges, q2, a)
 
-            if next1 is None ^ next2 is None:
+            if (next1 is None) ^ (next2 is None):
+                return False
+            if (next1 in g1.final_states) ^ (next2 in g2.final_states):
                 return False
 
-            if next1 not in visited:
+            if next1 not in visited and next1 not in queue1:
                 queue1.insert(0, next1)
                 queue2.insert(0, next2)
+
+            prev1 = get_prev(g1.states, g1.edges, q1, a)
+            prev2 = get_prev(g2.states, g2.edges, q2, a)
+
+            if (prev1 is None) ^ (next2 is None):
+                return False
+            if (prev1 in g1.final_states) ^ (prev2 in g2.final_states):
+                return False
+
+            if prev1 not in visited and prev1 not in queue1:
+                queue1.insert(0, prev1)
+                queue2.insert(0, prev2)
 
     return True
 
@@ -114,23 +132,23 @@ def _is_isomorphic(g1, g2, starting_states_1, starting_states_2, couple):
     return False
 
                                             
-    def is_isomorphic(g1, g2, level, k):
-        """
-        Tell whether g1 is isomorphic to g2
-        If yes, returns a list of couples
-        If not, returns none
-        """
-        starting_states_1 = get_all_states_of_level(graph1, level)
-        starting_states_2 = get_all_states_of_level(graph2, level + k)
+def is_isomorphic(g1, g2, level, k):
+    """
+    Tell whether g1 is isomorphic to g2
+    If yes, returns a list of couples
+    If not, returns none
+    """
+    starting_states_1 = get_all_states_of_level(g1, level)
+    starting_states_2 = get_all_states_of_level(g2, level + k)
 
-        if len(starting_states_1) != len(starting_states_2):
-            return False
-        
-        res = []
-        if _is_isomorphic(g1, g2, starting_states_1, starting_states_2, res):
-            return res
+    if len(starting_states_1) != len(starting_states_2):
+        return False
+    
+    res = []
+    if _is_isomorphic(g1, g2, starting_states_1, starting_states_2, res):
+        return res
 
-        return None
+    return None
             
 
 class OneCounter:
