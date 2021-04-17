@@ -9,7 +9,6 @@ class Teacher:
 
     prev = {}
 
-
     def accepts_word(self, word: str) -> bool:
         """
         Tell whether a word is accepted or not
@@ -43,20 +42,6 @@ class Teacher:
                 (or OK if the automata is good): ")
 
         return True if res == "OK" else res
-
-
-def get_all_suffixes(word: str):
-    """
-    Get all suffixes of a word
-    """
-    res = [""]
-    suff = ""
-    i = len(word) - 1
-    while i >= 0:
-        suff = word[i] + suff
-        res.append(suff)
-
-    return res
 
 
 def get_all_prefixes(word: str):
@@ -189,10 +174,9 @@ def add_counterexample_to_SET(ce, SET, teacher):
     return SET
 
 
-def get_S_from_word(SET, word, teacher) -> bool:
+def get_S_from_word(SET, word, teacher) -> str:
     """
-    Get a state of SET from a word w of same equivalence class
-    Raise an exception if it does not exist
+    Get a state index of SET from a word w of same equivalence class
     """
     if word in list(SET.index):
         return word

@@ -5,8 +5,8 @@ import numpy as np
 import re
 import copy
 
-import given.thlr_tools as thlr
-import given.display_automaton as display
+import tools.one_counter_tools as oc
+import tools.display_automaton as display
 
 class Teacher:
 
@@ -315,92 +315,53 @@ def get_transitions(RST, alphabet, states):
     return res
 
 
-def get_edges_from_state(states, edges, src):
+def delete_all_superior_levels(graph, cv):
     """
-    Get all edges which initial state is src
+    Delete all levels greater than cv
     """
-    res = []
-    for e in edges:
-        if e[0] == src:
-            res.append(e)
+    for q in list(graph.states):
+        cvq = int(q[:(q.index('_'))])
+        if cvq > cv:
+            graph.states.remove(q)
+            for e in list(graph.edges):
+                if e[0] == q or e[2] == q:
+                    graph.edges.remove(e)
+
+
+def get_sub_graph(level1, level2, graph):
+    """
+    Get a graph with only states of of level 1 to level 2
+    Transitions from level2 are removed
+    """
+    # Remove all states < level 1 or > level2
+    res = copy.deepcopy(graph)
+    for q in list(res.states):
+        cvq = int(q[:(q.index('_'))])
+        if cvq > level2 or cvq < level1:
+            res.remove_state(q)
+
+    # Removing transition from level 2
+    for e in list(res.edges):
+        if int(e[0][:(e[0].index('_'))]) == level2:
+            res.edges.remove(e)
+
     return res
 
-def get_next(states, edges, src, a):
-    """
-    Get the transtion from state src using symbol a
-    """
-    for e in get_edges_from_state(states, edges, src):
-        if e[1] == a:
-            return e[2]
-    return None
 
-
-def is_periodic(q1, q2, graph: thlr.OneCounter, alphabet):
+def is_periodic(l1, l2, graph: oc.OneCounter, alphabet):
     """
     Checks wether there is a period at q1 and q2 of length k, with k = cv(q1) - cv(q2)
     """
-    # Extracting cv and word from state name
-    w1 = q1[(q1.index('_') + 1):]
-    w2 = q2[(q2.index('_') + 1):]
-    cvw1 = int(q1[:(q1.index('_'))])
-    cvw2 = int(q2[:(q2.index('_'))])
+    # Making sure there is no issue
+    m = l1
+    k = l2 - l1
+    if k <= 0:
+        raise RuntimeError("Cannot process period: l1>=l2 are the same: l1=" +str(l1)+ ", l2=" +str(l2))
 
-    states = graph.states
-    edges = graph.edges
+    graph1 = get_sub_graph(l1, l2, graph)
+    graph2 = get_sub_graph(l2, l2 + k, graph)
 
-    # Making sure the is no issue
-    m = cvw1
-    k = cvw2 - cvw1
-    if k == 0:
-        raise RuntimeError("Cannot process period: q1 and q2 have same counter value.")
-    k = k if k >= 0 else -k
-
-    # Queues are needed for breadth first traversal
-    queue1 = [q1]
-    queue2 = [q2]
-
-    print("Checking period between " + q1 + " and " + q2 + ".")
-
-    while queue1 != [] and queue2 != []:
-
-        currq1 = queue1.pop()
-        currq2 = queue2.pop()
-
-        for a in alphabet[0]:
-
-            q1a = get_next(states, edges, currq1, a)
-            q2a = get_next(states, edges, currq2, a)
-
-            if (q1a is None) ^ (q2a is None):
-                print(q1 + " and " + q2 + " not peridic because, using " + a +", we got " + str(currq1) + "->" + str(q1a) + "!=" + str(currq2) + "->" +str(q2a))
-                return False
-            # Check if two states exist
-            if q1a is None and q2a is None:
-                continue
-
-            cv_w1a = int(q1a[:(q1a.index('_'))])
-            cv_w2a = int(q2a[:(q2a.index('_'))])
-
-            # Check if two states are marked as same cv
-            if cv_w1a != cv_w2a - k:
-                print("Not supposed to happen?")
-                return False
-            if cv_w1a >= m and cv_w2a <= m + k:
-                queue1.insert(0, q1a)
-                queue2.insert(0, q2a)
-        
-    return True
-
-
-def get_all_states_of_level(graph, cv):
-    """
-    Returns all states index with counter value cv
-    """
-    res = []
-    for q in graph.states:
-        if int(q[:(q.index('_'))]) == cv:
-            res.append(q)
-    return res
+    return oc.is_isomorphic(graph1, graph2, l1, k)
 
 
 def delete_all_superior_levels(graph, cv):
@@ -416,56 +377,37 @@ def delete_all_superior_levels(graph, cv):
                     graph.edges.remove(e)
 
 
-def link_period(graph, q1, q2, wmapper):
+def link_period(graph, couples, alphabet):
     """
     Link graph with period found between q1 and q2
     """
-    for src2, a2, dest2 in get_edges_from_state(graph.states, graph.edges, q2):
-        if wmapper[a2] == 1:
-            print("Removing " + src2 + " to " + dest2)
-            graph.edges.remove((src2, a2, dest2))
-
-    for src1, a1, dest1 in get_edges_from_state(graph.states, graph.edges, q1):
-        if wmapper[a1] == 1: 
-            if (q2, a1, dest1) not in graph.edges:
-                print("Linking " + q2 + " to " + dest1)
-                graph.edges.append((q2, a1, dest1))
-
-    for src2, a2, dest2 in get_edges_from_state(graph.states, graph.edges, q2):
-        if wmapper[a1] == -1:
-            if (q1, a2, dest2) not in graph.edges:
-                print("Linking " + q1 + " to " + dest2)
-                graph.edges.append((q1, a2, dest2))
+    for q1, q2 in couples:
+        for src, a, dest in oc.get_edges_from_state(graph.edges, q1):
+            graph.edges.append((q2, a, dest))
 
 
-def detect_period_and_loop_back(graph: thlr.OneCounter, RST, alphabet):
+def detect_period_and_loop_back(graph: oc.OneCounter, RST, alphabet):
     """
     Do a parallel breadth first search to find periodic blocs
     """
-    if len(RST) < 2:
+    if len(RST) < 3:
         print("Graph is too small to find a periodic structure")
         return
 
-    res = False
     # m goes from 0 to len
     for m in range(len(RST) - 2):
         # k goes from (len - m) / 2 to 1
         for k in list(range(1, (len(RST) - m) // 2 + 1))[::-1]:
-            # calling is_periodic on all point of a same level
-            m_states = get_all_states_of_level(graph, m)
-            print("mstates: " + str(m_states))
-            mk_states = get_all_states_of_level(graph, m + k)
-            print("mkstates: " + str(mk_states))
-            for mi in m_states:
-                for mki in mk_states:
-                    if is_periodic(mi, mki, graph, alphabet):
-                        print("A periodic pattern of width "+ str(k) +" was found between '" + str(mi) + "' and '" + str(mki) + "'.")
-                        link_period(graph, mi, mki, alphabet[1])
-                        #delete_all_superior_levels(graph, m + k) # This func should not be necessary after all
-                        res = True
-                        return 
-    if not res:
-        print("No periodic subgraph found. Showing behaviour graph as it is.")
+
+            # Checking if the 2 levels are isomorphic and if so the graph is periodic
+            couples = is_periodic(m, m + k, graph, alphabet)
+            if couples is not None:
+                print("A periodic pattern between level " + str(m) + " and level '" + str(m + k) + "' was found.")
+                delete_all_superior_levels(graph, m + k)
+                link_period(graph, couple, alphabet)
+                return 
+        
+    print("No periodic subgraph found. Showing behaviour graph as it is.")
 
 
 def RST_to_one_counter(RST, alphabet, teacher):
@@ -492,7 +434,7 @@ def RST_to_one_counter(RST, alphabet, teacher):
     print(init)
     print(transitions)
 
-    behaviour = thlr.OneCounter(states, [init], final, alphabet[0], alphabet[1], transitions)
+    behaviour = oc.OneCounter(states, [init], final, alphabet[0], alphabet[1], transitions)
     display.export_one_counter(behaviour, "behaviour_graph_unminimized")
     behaviour.remove_useless_states()
     display.export_one_counter(behaviour, "behaviour_graph")
