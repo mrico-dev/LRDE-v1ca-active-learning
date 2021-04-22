@@ -84,6 +84,7 @@ def _is_state_isomorphic(g1, g2, state1, state2):
             if (next1 in g1.final_states) ^ (next2 in g2.final_states):
                 return False
 
+
             if next1 not in visited and next1 not in queue1:
                 queue1.insert(0, next1)
                 queue2.insert(0, next2)
@@ -91,7 +92,7 @@ def _is_state_isomorphic(g1, g2, state1, state2):
             prev1 = get_prev(g1.states, g1.edges, q1, a)
             prev2 = get_prev(g2.states, g2.edges, q2, a)
 
-            if (prev1 is None) ^ (next2 is None):
+            if (prev1 is None) ^ (prev2 is None):
                 return False
             if (prev1 in g1.final_states) ^ (prev2 in g2.final_states):
                 return False
@@ -115,6 +116,7 @@ def _is_isomorphic(g1, g2, starting_states_1, starting_states_2, couple):
 
     for q1 in starting_states_1:
         for q2 in starting_states_2:
+
             # Let's check if q1 and q2 is a good couple
             if _is_state_isomorphic(g1, g2, q1, q2):
 
@@ -142,7 +144,7 @@ def is_isomorphic(g1, g2, level, k):
     starting_states_2 = get_all_states_of_level(g2, level + k)
 
     if len(starting_states_1) != len(starting_states_2):
-        return False
+        return None
     
     res = []
     if _is_isomorphic(g1, g2, starting_states_1, starting_states_2, res):
@@ -164,8 +166,19 @@ class OneCounter:
         self.word_mapper = wmapper
 
 
+    def display(self):
+        """
+        Display the one counter states and transitions
+        """
+        print("AUTOMATA:")
+        print("states: " + str(self.states))
+        print("edges: " + str(self.edges))
+        print("init: " + str(self.init_states))
+        print("final: " + str(self.final_states))
+
+
     def remove_state(self, q):
-        for e in self.edges:
+        for e in list(self.edges):
             if e[0] == q or e[2] == q:
                 self.edges.remove(e)
         self.states.remove(q)

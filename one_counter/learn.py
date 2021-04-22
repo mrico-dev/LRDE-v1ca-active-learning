@@ -8,14 +8,18 @@ import copy
 import tools.one_counter_tools as oc
 import tools.display_automaton as display
 
-class Teacher:
 
+class Teacher:
+    """
+    Teacher class, abstract object that is supposed to answer algorithm queries
+    """
+
+    # Prev is basically a cache of all previous word to avoid asking equivalence for the same word twice
     prev = {}
 
     def __init__(self, regex: str or None = None, func: callable or None = None):
         self.regex = regex
         self.func = func
-
 
     def accepts_word(self, word: str) -> bool:
         """
@@ -36,7 +40,6 @@ class Teacher:
         res = ""
 
         if word in self.prev:
-            #print("We already know '" + word + "', skipping...")
             return self.prev[word]
 
         while res != "Y" and res != "N":
@@ -52,15 +55,28 @@ class Teacher:
         """
         Tell wheter the language is accepted, if not gives a counter example
         """
+        path = "learning_one_counter"
         if automata_type == 'one_counter':
-            display.export_one_counter(automata, "learning_one_counter")
+            display.export_one_counter(automata, path)
         else:
             raise Exception("Unknown automata type")
 
-        res = input("Please compare the two automata and give a counter example\
-                (or OK if the automata is good): ")
+        res = input("Please check the automata (automata name should be '" + str(path) + ".pdf') and give a counter example\
+                (or 'OK' if the automata is good): ")
 
-        return True if res == "OK" else res
+        return True if res.upper() == "OK" else res
+
+    def is_behaviour(self, graph) -> str or True:
+        """
+        Tell whether the behaviour graph is correct
+        """
+        path = "learning_behaviour_graph"
+        display.export_one_counter(graph, path)
+
+        res = input("Please check the behaviour graph (graph name should be '" + str(path) + ".pdf') and give a counter example\
+                (or 'OK' if the graph is good): ")
+
+        return True if res.upper() == "OK" else res
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -340,11 +356,6 @@ def get_sub_graph(level1, level2, graph):
         if cvq > level2 or cvq < level1:
             res.remove_state(q)
 
-    # Removing transition from level 2
-    #for e in list(res.edges):
-    #    if int(e[0][:(e[0].index('_'))]) == level2:
-    #        res.edges.remove(e)
-
     return res
 
 
@@ -356,10 +367,18 @@ def is_periodic(l1, l2, graph: oc.OneCounter, alphabet):
     m = l1
     k = l2 - l1
     if k <= 0:
-        raise RuntimeError("Cannot process period: l1>=l2 are the same: l1=" +str(l1)+ ", l2=" +str(l2))
+        raise RuntimeError("Cannot process period: l1>=l2 are the same: l1=" + str(l1) + ", l2=" + str(l2))  
 
     graph1 = get_sub_graph(l1, l2, graph)
     graph2 = get_sub_graph(l2, l2 + k, graph)
+
+    # TODO Remove
+    if l1 == 1 and l2 == 2:
+        display.export_one_counter(graph1, "subgraph1.1")
+        display.export_one_counter(graph2, "subgraph2.1")
+    if l1 == 2 and l2 == 2:
+        display.export_one_counter(graph1, "subgraph1.2")
+        display.export_one_counter(graph2, "subgraph2.2")
 
     res = oc.is_isomorphic(graph1, graph2, l1, k)
 
@@ -389,7 +408,11 @@ def link_period(graph, couples, alphabet):
     """
     for q1, q2 in couples:
         for src, a, dest in oc.get_edges_from_state(graph.edges, q1):
-            graph.edges.append((q2, a, dest))
+            if alphabet[1][a] == 1:
+                graph.edges.append((q2, a, dest))
+        for src, a, dest in oc.get_edges_from_state(graph.edges, q2):
+            if alphabet[1][a] == -1:
+                graph.edges.append((q1, a, dest))
 
 
 def detect_period_and_loop_back(graph: oc.OneCounter, RST, alphabet):
@@ -417,7 +440,7 @@ def detect_period_and_loop_back(graph: oc.OneCounter, RST, alphabet):
     print("No periodic subgraph found. Showing behaviour graph as it is.")
 
 
-def RST_to_one_counter(RST, alphabet, teacher):
+def RST_to_behaviour(RST, alphabet, teacher):
     """
     Create a one_counter automata from the RST
     """
@@ -445,23 +468,20 @@ def RST_to_one_counter(RST, alphabet, teacher):
     display.export_one_counter(behaviour, "behaviour_graph_unminimized")
     #behaviour.remove_useless_states()
     #display.export_one_counter(behaviour, "behaviour_graph")
-    detect_period_and_loop_back(behaviour, no_dup_RST, alphabet)
-    display.export_one_counter(behaviour, "one_counter_unminimized")
-    behaviour.remove_useless_states()
 
-    return behaviour
+    return behaviour, no_dup_RST
 
 
 def learn_one_counter(alphabet, teacher: Teacher):
     """
     Initialize an empty stratified observation table O up to level t = 0
     repeat
-        1. Learn BG L|t using membership and partial equivalence queries. -> main loop
-        2. Identify all periodic descriptions β of BG L|t.                -> ??
-        3. Construct a conjecture VCA Aβ for each periodic description.   -> building one-counter
+        1. Learn BG L|t using membership and partial equivalence queries. -> make_RST_consistent + make_RST_closed + RST_to_behaviour
+        2. Identify all periodic descriptions β of BG L|t.                -> detect_period_and_loop_back
+        3. Construct a conjecture VCA Aβ for each periodic description.   -> detect_period_and_loop_back
         4. Conduct equivalence queries on the conjectures.                -> ask teacher 
         5. If a VCA accepting L is found, then stop and output this VCA.
-            Otherwise choose one counter-example and add it to O. Thereby t increases. -> using counter example
+            Otherwise choose one counter-example and add it to O. Thereby t increases. -> add_counterexample_to_RST
     until a VCA recognizing L is found.
     """
     # RST Table (using panda)
@@ -479,20 +499,34 @@ def learn_one_counter(alphabet, teacher: Teacher):
             is_closed = make_RST_closed(RST, alphabet, teacher)
             print("is_closed: " + str(is_closed) + ", is_consistent:" + str(is_consistent))
 
-        M = RST_to_one_counter(RST, alphabet, teacher)
-        # Whether M is the language we are looking for
-        counter_example = teacher.is_language(M, 'one_counter')
-        is_language = type(counter_example) is not str and counter_example
+        # One RST is closed and consistent, getting behaviour graph
+        (behaviour, no_dup_RST) = RST_to_behaviour(RST, alphabet, teacher)
+        # Partial equivalence query
+        counter_example = teacher.is_behaviour(behaviour)
+        is_behaviour = type(counter_example) is not str and counter_example
 
-        if not is_language:
+        # If query is OK 
+        if is_behaviour:
+            one_counter = behaviour
+            # Finding period and looping to build 1VCA
+            detect_period_and_loop_back(one_counter, no_dup_RST, alphabet)
+            # Displaying unminimized automata
+            display.export_one_counter(one_counter, "one_counter_unminimized")
+            one_counter.remove_useless_states()
+            counter_example = teacher.is_language(one_counter, 'one_counter')
+            is_language = type(counter_example) is not str and counter_example
+
+            if not is_language:
+                add_counterexample_to_RST(counter_example, RST, teacher, alphabet)
+        else:
             add_counterexample_to_RST(counter_example, RST, teacher, alphabet)
 
     print("Learning took " + str(len(teacher.prev.keys())) + " word queries.")
-    return M
+    return one_counter
 
 
 if __name__ == "__main__":
-
+    
     def is_anbn(w):
         counter = 0
         i = 0
@@ -503,11 +537,62 @@ if __name__ == "__main__":
             i += 1
             counter -= 1
         return i == len(w) and counter == 0
+
+    def is_ancbn(w):
+        counter = 0
+        i = 0
+        while i < len(w) and w[i] == 'a':
+            i += 1
+            counter += 1
+
+        while i < len(w) and w[i] == 'c':
+            i += 1
+
+        while i < len(w) and w[i] == 'b':
+            i += 1
+            counter -= 1
+
+        return i == len(w) and counter == 0
+
+    def is_xabnycdnz(w):
+        counter = 0
+        i = 0
+        while i < len(w) and w[i] == 'x':
+            i += 1
+        while i < len(w) and (w[i] == 'a' or w[i] == 'b'):
+            i += 1
+            counter += 1
+        while i < len(w) and w[i] == 'y':
+            i += 1
+        while i < len(w) and (w[i] == 'c' or w[i] == 'd'):
+            i += 1
+            counter -= 1
+        while i < len(w) and w[i] == 'z':
+            i += 1
+
+        return i == len(w) and counter == 0
     
     alphabet = set(['a', 'b'])
     wmapper = {'a': 1, 'b': -1}
+    #alphabet = set(['a', 'b', 'c', 'd', 'x', 'y', 'z'])
+    #wmapper = {'a': 1, 'b': 1, 'c': -1, 'd': -1, 'x': 0, 'y': 0, 'z': 0}
     teacher = Teacher(func=is_anbn)
 
     learn_one_counter([alphabet, wmapper], teacher)
 
+    if False:
+
+        # Some other test on isomorphism
+        graph1 = oc.OneCounter([], [], [], alphabet, wmapper, [])
+        graph2 = oc.OneCounter([], [], [], alphabet, wmapper, [])
+
+        graph1.states =  {'2_aaab', '1_aab', '2_abaa', '1_aba', '2_aa', '1_a'}
+        graph1.edges = [('1_a', 'a', '2_aa'), ('1_aba', 'a', '2_abaa'), ('1_aab', 'a', '2_abaa'), ('2_aa', 'b', '1_aab'), ('2_abaa', 'b', '1_aba'), ('2_aaab', 'b', '1_aab')]
+        graph2.states = {'2_aaab', '2_abaa', '3_abaaa', '2_aa', '3_aaaab', '3_aaa'}
+        graph2.edges = [('2_aa', 'a', '3_aaa'), ('2_abaa', 'a', '3_abaaa'), ('2_aaab', 'a', '3_abaaa'), ('3_aaa', 'b', '2_aaab'), ('3_abaaa', 'b', '2_abaa'), ('3_aaaab', 'b', '2_aaab')]
+
+        display.export_one_counter(graph1, "test1")
+        display.export_one_counter(graph2, "test2")
+
+        print(oc.is_isomorphic(graph1, graph2, 1, 1))
 
