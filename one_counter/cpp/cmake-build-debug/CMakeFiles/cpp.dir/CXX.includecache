@@ -1,0 +1,14 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/mrico/Documents/Epita/s8/lab/one_counter/cpp/cmake-build-debug/main.cpp
+iostream
+-
+V1CALearner.h
+/home/mrico/Documents/Epita/s8/lab/one_counter/cpp/cmake-build-debug/V1CALearner.h
+
