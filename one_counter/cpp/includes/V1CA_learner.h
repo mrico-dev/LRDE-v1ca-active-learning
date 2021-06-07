@@ -1,5 +1,4 @@
-#ifndef CPP_V1CALEARNER_H
-#define CPP_V1CALEARNER_H
+#pragma once
 
 #include "V1CA.h"
 #include "teacher.h"
@@ -11,14 +10,14 @@ namespace active_learning {
     class V1CA_learner {
 
     private:
-        bool make_rst_consistent(RST rst);
+        bool make_rst_consistent(RST &rst);
 
-        bool make_rst_closed(RST rst);
+        bool make_rst_closed(RST &rst);
 
     public:
         V1CA_learner(teacher &teacher, alphabet_t &alphabet);
 
-        V1CA learn_V1CA(bool verbose=false);
+        V1CA learn_V1CA(bool verbose = false);
 
     private:
         teacher &teacher_;
@@ -27,4 +26,4 @@ namespace active_learning {
 
 }
 
-#endif // CPP_V1CALEARNER_H
+// CPP_V1CALEARNER_H

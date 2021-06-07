@@ -1,8 +1,14 @@
-#ifndef V1C2AL_TEACHER_H
-#define V1C2AL_TEACHER_H
+#pragma once
 
 #include <string>
+#include <optional>
+#include <map>
 
+namespace active_learning {
+    class V1CA;
+}
+
+#include "dataframe.h"
 #include "V1CA.h"
 
 namespace active_learning {
@@ -12,7 +18,10 @@ namespace active_learning {
     public:
         virtual bool belong_query(const std::string &word) = 0;
 
-        virtual std::optional<std::string> partial_equivalence_query(V1CA &behaviour_graph, const std::string &path) = 0;
+        virtual std::optional<std::string>
+        partial_equivalence_query(V1CA &behaviour_graph, const std::string &path) = 0;
+
+        virtual std::string sum_up_msg() const;
 
         virtual std::optional<std::string> equivalence_query(V1CA &automaton, const std::string &path) = 0;
     };
@@ -23,6 +32,7 @@ namespace active_learning {
         virtual bool belong_query_(const std::string &word) = 0;
 
     public:
+        std::string sum_up_msg() const override;
         bool belong_query(const std::string &word) override;
 
     private:
@@ -30,4 +40,4 @@ namespace active_learning {
     };
 }
 
-#endif //V1C2AL_TEACHER_H
+//V1C2AL_TEACHER_H

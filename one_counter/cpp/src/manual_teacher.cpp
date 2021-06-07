@@ -13,4 +13,8 @@ namespace active_learning {
         return res == "y";
     }
 
+    manual_teacher::manual_teacher(alphabet_t &alphabet) {
+        alphabet_ = alphabet;
+    }
+
 }

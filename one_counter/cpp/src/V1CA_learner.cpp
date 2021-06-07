@@ -8,11 +8,13 @@ namespace active_learning {
 
     V1CA_learner::V1CA_learner(teacher &teacher, alphabet_t &alphabet) : teacher_(teacher), alphabet_(alphabet) {}
 
-    bool V1CA_learner::make_rst_consistent(RST rst) {
+    bool V1CA_learner::make_rst_consistent(RST &rst) {
         for (auto &table : rst.get_tables()) {
-            for (auto &u : table.get_row_labels()) {
-                for (auto &v : table.get_row_labels()) {
-                    if (u != v and is_O_equivalent(u, v, rst, teacher_, alphabet_)) {
+            for (auto u_i = 0u; u_i < table.get_row_labels().size(); ++u_i) {
+                const std::string &u = table.get_row_labels()[u_i];
+                for (auto v_i = u_i + 1; v_i < table.get_row_labels().size(); ++v_i) {
+                    const std::string &v = table.get_row_labels()[v_i];
+                    if (is_O_equivalent(u, v, rst, teacher_, alphabet_)) {
                         for (auto &symbol : alphabet_) {
                             char c = symbol.first;
                             std::string uc = u + c;
@@ -29,7 +31,7 @@ namespace active_learning {
                                 for (auto &clabel : uc_table.get_col_labels()) {  // FIXME Small opti here (on at())
                                     if (uc_table.at(uc, clabel) != uc_table.at(vc, clabel)) {
                                         auto new_s = c + clabel;
-                                        rst.add_row_using_query(new_s, cv_uc, teacher_);
+                                        rst.add_row_using_query(new_s, cv_uc, teacher_, "make_consistent");
                                     }
                                 }
 
@@ -44,10 +46,10 @@ namespace active_learning {
         return true;
     }
 
-    bool V1CA_learner::make_rst_closed(RST rst) {
+    bool V1CA_learner::make_rst_closed(RST &rst) {
         for (size_t i = 0; i < rst.size(); ++i) {
             auto &table = rst.get_tables()[i];
-            for (auto &u: table.get_row_labels()) {
+            for (const std::string& u: table.get_row_labels()) {
                 for (auto symbol : alphabet_) {
 
                     char c = symbol.first;
@@ -56,19 +58,20 @@ namespace active_learning {
                         continue;
                     }
 
-                    auto uc = u + c;
+                    std::string uc = u + c;
+                    std::cout << "make_rst_closed: trying with '" << u << "' + " << c << '\n';
                     auto uc_O = get_congruence_set(uc, rst, teacher_, alphabet_);
-                    int iXc = static_cast<int>(i) + val;
+                    int cv_uc = static_cast<int>(i) + val;
 
-                    auto &iXc_table = rst.get_tables()[iXc];
-                    if (std::find(iXc_table.get_row_labels().begin(), iXc_table.get_row_labels().end(), uc) != iXc_table.get_row_labels().end()) {
+                    auto &uc_table = rst.get_tables()[cv_uc];
+                    if (std::find(uc_table.get_row_labels().begin(), uc_table.get_row_labels().end(), uc) != uc_table.get_row_labels().end()) {
                         continue;
                     }
 
                     // Checking if there is words in common in iXc_table (rows) and uc_O
                     bool empty_inter = true;
                     for (const auto& congruence_word : uc_O) {
-                        for (const auto& clabel : iXc_table.get_row_labels()) {
+                        for (const auto& clabel : uc_table.get_row_labels()) {
                             if (congruence_word == clabel) {
                                 empty_inter = false;
                                 break;
@@ -79,7 +82,8 @@ namespace active_learning {
                     }
 
                     if (empty_inter) {
-                        rst.add_row_using_query(uc, iXc, teacher_);
+                        std::cout << "Adding '" << uc << "'.\n";
+                        rst.add_row_using_query(uc, cv_uc, teacher_, "make_closed");
                         return false;
                     }
                 }
@@ -108,6 +112,7 @@ namespace active_learning {
                 is_closed = make_rst_closed(rst);
                 // Some debug print
                 if (verbose) {
+                    std::cout << "RST after trying to make it closed/consistent:\n";
                     std::cout << rst;
                     std::cout << "Consistent: " << is_consistent << ", closed: " << is_closed << std::endl;
                 }
@@ -121,7 +126,7 @@ namespace active_learning {
             auto partial_eq = teacher_.partial_equivalence_query(behaviour_graph, "behaviour_graph");
             if (!partial_eq) {
                 // Making V1CA by (maybe) finding a periodic subgraph
-                res = V1CA_builder::behaviour_graph_to_V1CA(behaviour_graph, rst_no_dup);  // inplace
+                res = V1CA_builder::behaviour_graph_to_V1CA(behaviour_graph, rst_no_dup, alphabet_, verbose);  // inplace
                 // Testing V1CA equivalence
                 auto eq = teacher_.equivalence_query(res, "v1ca");
                 if (!eq)
@@ -133,7 +138,7 @@ namespace active_learning {
             }
         }
 
-        return *res;
+        return res;
     }
 
 }

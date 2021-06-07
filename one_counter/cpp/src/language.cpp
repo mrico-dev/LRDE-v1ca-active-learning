@@ -1,8 +1,10 @@
 #include "language.h"
 
+#include <iostream>
+
 namespace active_learning {
 
-    int get_cv(std::string word, alphabet_t alphabet) {
+    int get_cv(const std::string &word, alphabet_t &alphabet) {
 
         int res = 0;
         for (char c : word) {
@@ -13,18 +15,21 @@ namespace active_learning {
     }
 
     bool is_O_equivalent(const std::string &word1, const std::string &word2, RST &rst, teacher &teacher, alphabet_t &alphabet) {
+        if (word1 == word2)
+            return true;
+
         int cv_w = get_cv(word1, alphabet);
         if (cv_w != get_cv(word2, alphabet))
             return false;
 
         auto rst_copy = RST(rst);
-        rst_copy.add_row_using_query(word1, cv_w, teacher);
-        rst_copy.add_row_using_query(word2, cv_w, teacher);
+        rst_copy.add_row_using_query_if_not_present(word1, cv_w, teacher, "is_O_equivalent");
+        rst_copy.add_row_using_query_if_not_present(word2, cv_w, teacher, "is_O_equivalent");
 
         return rst_copy.compare_rows(word1, word2, cv_w);
     }
 
-    std::set<std::string> get_congruence_set(const std::string word, RST &rst, teacher &teacher, alphabet_t alphabet) {
+    std::set<std::string> get_congruence_set(const std::string &word, RST &rst, teacher &teacher, alphabet_t alphabet) {
         int cv_w = get_cv(word, alphabet);
 
         if (cv_w > static_cast<int>(rst.size())) {
@@ -44,13 +49,23 @@ namespace active_learning {
     }
 
     std::vector<std::string> get_all_prefixes(const std::string &word) {
-        std::vector<std::string> res;
-        auto pref = "";
+        std::vector<std::string> res({""});
+        std::string pref;
         for (char c : word) {
-           pref += c;
+           pref.push_back(c);
            res.emplace_back(pref);
         }
 
         return res;
+    }
+
+    bool is_from_alphabet(const std::string &word, const alphabet_t &alphabet) {
+        for (const char &c : word) {
+            if (!alphabet.count(c)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

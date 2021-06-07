@@ -1,8 +1,14 @@
-#ifndef V1C2AL_DATAFRAME_H
-#define V1C2AL_DATAFRAME_H
+#pragma once
 
 #include <vector>
 #include <string>
+#include <map>
+
+namespace active_learning {
+    class teacher;
+
+    using alphabet_t = std::map<char, int>;
+}
 
 #include "language.h"
 #include "teacher.h"
@@ -18,7 +24,6 @@ namespace active_learning {
         public:
 
             RST_table() = default;
-            RST_table(teacher &teacher);
 
             void add_row(const std::string &name);
 
@@ -28,15 +33,23 @@ namespace active_learning {
 
             void add_col_using_query(const std::string &name, teacher &teacher);
 
+
             const std::vector<std::string> &get_col_labels() const;
 
             const std::vector<std::string> &get_row_labels() const;
 
-            const std::vector<std::vector<bool>> &get_data() const;
+            std::vector<std::string> &get_mutable_row_labels();
+
+            std::vector<std::vector<bool>> &get_data();
+
+            const std::vector<std::vector<bool>> &get_cdata() const;
 
             bool at(const std::string &row, const std::string &col) const;
+
             bool at(const std::string &row, size_t col_index) const;
+
             bool at(size_t row_index, const std::string &col) const;
+
             inline bool at(size_t row_index, size_t col_index) const;
 
         private:
@@ -49,17 +62,25 @@ namespace active_learning {
         void expand_RST(int cv);
 
     public:
-        RST(teacher &teacher);
+        explicit RST(teacher &teacher);
 
         RST remove_duplicate_rows() const;
 
         void add_row(const std::string &name, int cv);
 
-        void add_row_using_query(const std::string &name, int cv, teacher &teacher);
-
         void add_col(const std::string &name, int cv);
 
+        void add_row_using_query(const std::string &name, int cv, teacher &teacher);
+
         void add_col_using_query(const std::string &name, int cv, teacher &teacher);
+
+        void add_row_using_query(const std::string &name, int cv, teacher &teacher, const std::string &context);
+
+        void add_col_using_query(const std::string &name, int cv, teacher &teacher, const std::string &context);
+
+        void add_row_using_query_if_not_present(const std::string &name, int cv, teacher &teacher, const std::string &context);
+
+        void add_col_using_query_if_not_present(const std::string &name, int cv, teacher &teacher, const std::string &context);
 
         void add_counter_example(const std::string &ce, teacher &teacher, alphabet_t &alphabet);
 
@@ -67,15 +88,17 @@ namespace active_learning {
 
         size_t size() const;
 
-        const std::vector<RST_table> &get_tables() const;
+        std::vector<RST_table> &get_tables();
+
+        const std::vector<RST_table> &get_ctables() const;
 
     private:
         std::vector<RST_table> tables_;
-
     };
 
     std::ostream &operator<<(std::ostream &out, const RST &rst);
+
     std::ostream &operator<<(std::ostream &out, const RST::RST_table &table);
 }
 
-#endif //V1C2AL_DATAFRAME_H
+//V1C2AL_DATAFRAME_H

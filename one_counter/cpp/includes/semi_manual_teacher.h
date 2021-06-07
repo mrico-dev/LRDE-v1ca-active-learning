@@ -1,6 +1,4 @@
-#ifndef V1C2AL_SEMI_MANUAL_TEACHER_H
-#define V1C2AL_SEMI_MANUAL_TEACHER_H
-
+#pragma once
 
 #include "manual_eq_queries_teacher.h"
 
@@ -10,9 +8,14 @@ namespace active_learning {
 
         bool belong_query_(const std::string &word) override;
 
-        std::function<bool(const std::string&)> check_func;
+    public:
+        semi_manual_teacher(const std::function<bool(const std::string &)> &checkFunc, alphabet_t &alphabet);
+
+    private:
+
+        std::function<bool(const std::string &)> check_func;
     };
 
 }
 
-#endif //V1C2AL_SEMI_MANUAL_TEACHER_H
+//V1C2AL_SEMI_MANUAL_TEACHER_H

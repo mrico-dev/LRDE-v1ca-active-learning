@@ -29,7 +29,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 add_executable(v1c2al src/main.cpp)
 target_sources(v1c2al PRIVATE ${src_engine})
-target_link_libraries(v1c2al PRIVATE includes)
+#target_link_libraries(v1c2al PRIVATE includes)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
     set(Boost_USE_STATIC_LIBS ON)
@@ -40,4 +40,4 @@ set(Boost_LIBRARY_DIR c:/mingw/lib/)
 find_package(Boost COMPONENTS system filesystem REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 
-target_include_directories(v1c2al PUBLIC includes)
+#target_include_directories(v1c2al PUBLIC includes)

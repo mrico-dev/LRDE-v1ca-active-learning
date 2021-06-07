@@ -41,6 +41,7 @@ CMakeFiles/v1c2al.dir/src/main.cpp.o: ../includes/dataframe.h
 CMakeFiles/v1c2al.dir/src/main.cpp.o: ../includes/language.h
 CMakeFiles/v1c2al.dir/src/main.cpp.o: ../includes/manual_eq_queries_teacher.h
 CMakeFiles/v1c2al.dir/src/main.cpp.o: ../includes/manual_teacher.h
+CMakeFiles/v1c2al.dir/src/main.cpp.o: ../includes/semi_manual_teacher.h
 CMakeFiles/v1c2al.dir/src/main.cpp.o: ../includes/teacher.h
 CMakeFiles/v1c2al.dir/src/main.cpp.o: ../src/main.cpp
 
