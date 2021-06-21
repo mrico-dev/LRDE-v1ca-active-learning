@@ -2,11 +2,35 @@
 
 #include <string>
 #include <optional>
+#include <iostream>
 #include <boost/graph/adjacency_list.hpp>
 
 #include "language.h"
 
 namespace active_learning {
+
+    // Used for pair inside set
+    // Comparable pair
+    template <class T1, class T2>
+    struct pair_comp {
+
+        pair_comp(T1 e1, T2 e2) : first(e1), second(e2) {}
+
+        bool operator==(const pair_comp<T1, T2> &p1) const {
+            return p1.first == first and p1.second == second;
+        }
+        bool operator<(const pair_comp<T1, T2> &p1) const {
+            return (first + second * 65536) > (p1.first + p1.second * 65536);
+        }
+
+        T1 first;
+        T2 second;
+    };
+
+    template <class T1, class T2>
+    pair_comp<T1, T2> make_pair_comp(T1 e1, T2 e2) {
+        return pair_comp(e1, e2);
+    }
 
     struct V1CA_vertex {
         std::string name; // name must be unique
@@ -26,16 +50,79 @@ namespace active_learning {
         V1CA_edge() = default;
     };
 
+    // Used for graphviz dot vertex output
+    template <class v1ca_t>
+    class vertex_writer {
+
+    public:
+        vertex_writer(v1ca_t v1ca) : v1ca_(v1ca) {}
+
+        template <class Vertex>
+        void operator()(std::ostream& out, const Vertex& v) {
+            auto &g = v1ca_.get_mutable_graph();
+            V1CA_vertex prop = g[v];
+            auto final = v1ca_.is_final(prop);
+            if (prop.name.empty())
+                prop.name = "Entry point";
+            out << "[label=\"" << prop.cv << " " << prop.name << "\", shape=\""
+                    << ((final) ? "doublecircle" : "circle") << "\"]";
+        }
+    private:
+        v1ca_t v1ca_;
+    };
+
+    // Used for graphviz dot edge output
+    template <class v1ca_t, class alphabet_t>
+    class edge_writer {
+    public:
+        edge_writer(v1ca_t v1ca, alphabet_t alphabet) : v1ca_(v1ca),  alphabet_{alphabet} {}
+
+        template <class Edge>
+        void operator()(std::ostream& out, const Edge& e) {
+            auto g = v1ca_.get_mutable_graph();
+            auto e_pair = make_pair_comp(boost::source(e, g), boost::target(e, g));
+            V1CA_edge prop = g[e];
+            out << "[label=\"";
+
+            if (alphabet_[prop.symbol] == -1)
+                out << "-";
+            else if (alphabet_[prop.symbol] == 1)
+                out << "+";
+
+            std::string edge_color = "black";
+            std::string loop_cond;
+
+            if (v1ca_.colored()) {
+                if (v1ca_.get_mutable_loop_in_no_cond_color().contains(e_pair)) {
+                    edge_color = "gold4";
+                } else if (v1ca_.get_mutable_loop_in_with_cond_color().contains(e_pair)) {
+                    edge_color = "red";
+                    loop_cond = "if cv > " + std::to_string(v1ca_.period_cv());
+                } else if (v1ca_.get_mutable_loop_out_color().contains(e_pair)) {
+                    edge_color = "blue";
+                    loop_cond = "if cv <= " + std::to_string(v1ca_.period_cv());
+                }
+            }
+
+            out << prop.symbol << " " << loop_cond << "\", color=\""
+                << edge_color << "\"]";
+        }
+    private:
+        v1ca_t v1ca_;
+        alphabet_t alphabet_;
+    };
+
     class V1CA {
     public:
         using graph_t = boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, V1CA_vertex, V1CA_edge>;
         using vertex_descriptor_t = boost::graph_traits<graph_t>::vertex_descriptor;
         using edge_descriptor_t = boost::graph_traits<graph_t>::edge_descriptor;
         using label_map_t = std::map<unsigned long int, vertex_descriptor_t>;
-        using couples_t = std::optional<std::vector<std::pair<vertex_descriptor_t, vertex_descriptor_t>>>;
+        using couples_t = std::vector<std::pair<std::string, std::string>>;
         using states_t = std::vector<vertex_descriptor_t>;
 
-        using graph_color_t = std::set<edge_descriptor_t>;
+        // Cannot use edge descriptor because their value change depending on which graph they're from
+        using graph_color_t = std::set<pair_comp<vertex_descriptor_t, vertex_descriptor_t>>;
         using graph_colors_t = std::tuple<graph_color_t, // 0: "init edges"
                 graph_color_t, // 1: "loop in no condition"
                 graph_color_t, // 2: "loop in condition"
@@ -60,7 +147,9 @@ namespace active_learning {
 
         graph_t &get_mutable_graph();
 
-        couples_t is_isomorphic_to(V1CA &other, unsigned int from_level1, unsigned from_level2);
+        V1CA_edge get_edge(vertex_descriptor_t src, vertex_descriptor_t dest);
+
+        std::optional<couples_t> is_isomorphic_to(V1CA &other, unsigned int from_level1, unsigned from_level2);
 
         void display(const std::string &path);
 
@@ -82,6 +171,10 @@ namespace active_learning {
 
         void set_colored(bool colored);
 
+        bool colored() const;
+
+        int period_cv() const;
+
         graph_color_t &get_mutable_init_edge_color();
 
         graph_color_t &get_mutable_loop_in_no_cond_color();
@@ -94,7 +187,7 @@ namespace active_learning {
         std::unordered_set<std::string> init_states_;
         std::unordered_set<std::string> final_states_;
         std::shared_ptr<alphabet_t> alphabet_;
-        std::shared_ptr<graph_t> graph = nullptr;
+        graph_t graph;
         graph_colors_t colors_;
         int period_cv_ = -1;
         bool periodic_ = false;

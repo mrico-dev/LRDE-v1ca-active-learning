@@ -18,6 +18,7 @@ namespace active_learning {
         // Init states
         std::vector<V1CA_vertex> init_states;
         init_states.emplace_back("", 0);
+
         // Final states
         std::vector<V1CA_vertex> final_states;
         auto &table0 = no_dup_rst.get_tables()[0];
@@ -88,28 +89,37 @@ namespace active_learning {
                                  " Either the RST is not closed, or the word that was asked is out of context.");
     }
 
+    V1CA::vertex_descriptor_t V1CA_builder::get_vertex_by_name(V1CA& automaton, const std::string &name) {
+        auto &graph = automaton.get_mutable_graph();
+        auto v_its = boost::vertices(graph);
+        for (; v_its.first != v_its.second; ++v_its.first) {
+            if (graph[*v_its.first].name == name)
+                return *v_its.first;
+        }
+
+        throw std::invalid_argument("get_vertex_by_name(): Could not find vertex");
+    }
+
     V1CA V1CA_builder::get_subgraph(V1CA &automaton, unsigned int level_down, unsigned int level_top) {
         auto res = V1CA(automaton);
         auto &graph = res.get_mutable_graph();
 
-        auto v_it = boost::vertices(graph);
-        auto to_remove = std::vector<long int>();  // long int is basically the vertex descriptor type
-        for (; v_it.first != v_it.second; ++v_it.first) {
-            auto vertex_i = *v_it.first;
-            auto vertex = graph[vertex_i];
+        // Using a weird workaround on property deletion with VecS
+        boost::graph_traits<V1CA::graph_t>::vertex_iterator v_it, v_it_end, v_it_next;
+        std::tie(v_it, v_it_end) = boost::vertices(graph);
+        unsigned long graph_size = v_it_end - v_it;
+        for (unsigned long index = graph_size - 1; index < graph_size; --index) {
+            auto vertex = graph[index];
             if (vertex.cv < level_down or vertex.cv > level_top) {
-                to_remove.push_back(vertex_i);
+                boost::clear_vertex(index, graph);
+                boost::remove_vertex(index, graph);
             }
-        }
-
-        for (auto &e : to_remove) {
-            automaton.remove_state(e);
         }
 
         return res;
     }
 
-    V1CA_builder::couples_t
+    std::optional<V1CA_builder::couples_t>
     V1CA_builder::find_period(unsigned int level, unsigned int width, V1CA &automaton) {
         if (!width)
             throw std::invalid_argument("find_period(): width cannot be 0.");
@@ -129,16 +139,20 @@ namespace active_learning {
         }
 
         // m (the potential cv of the period) goes from 0 to max_cv
-        for (auto m = 0u; m < rst_no_dup.size(); ++m) {
+        //for (auto m = 0u; m < rst_no_dup.size(); ++m) {
+        for (auto m = 1u; m == 1u; m = 0) {
             // k (the potential width of the period) goes from ((max_cv - m) / 2) to 1
-            for (auto k = (rst_no_dup.size() - m) / 2; k >= 1; --k) {
+            // trying with only 1 for now
+            // for (auto k = (rst_no_dup.size() - m) / 2; k >= 1; --k) {
+            for (auto k = 1u; k == 1u; k = 0) {
                 // Checking if level m and level m+k are isomorphic
                 auto couples = find_period(m, k, automaton);
-                if (couples) {
+                if (couples.has_value()) {
                     if (verbose)
-                        std::cout << "Peridic pattern found between level " << m << " and " << m + k << ".\n";
+                        std::cout << "Periodic pattern found between level " << m << " and " << m + k << ".\n";
+
                     delete_high_levels(automaton, m + k);
-                    auto new_edges = link_period(automaton, couples, alphabet);
+                    auto new_edges = link_period(automaton, *couples, alphabet);
                     automaton.set_period_cv(static_cast<int>(m));
                     color_edges(automaton, new_edges);
 
@@ -147,26 +161,24 @@ namespace active_learning {
             }
         }
 
+        if (verbose)
+            std::cout << "No periodic pattern found. Returning behaviour graph as it is.\n";
+
         return automaton;
     }
 
     void V1CA_builder::delete_high_levels(V1CA &automaton, unsigned int threshold_level) {
         auto &graph = automaton.get_mutable_graph();
-
-        auto v_it = boost::vertices(graph);
-        // Using a vector because we cannot delete while iterating
-        auto to_remove = std::vector<V1CA::vertex_descriptor_t >();
-
-        for (; v_it.first != v_it.second; ++v_it.first) {
-            auto vertex_i = *v_it.first;
-            auto vertex = graph[vertex_i];
+        // Using a weird workaround on property deletion with VecS
+        boost::graph_traits<V1CA::graph_t>::vertex_iterator v_it, v_it_end, v_it_next;
+        std::tie(v_it, v_it_end) = boost::vertices(graph);
+        unsigned long graph_size = v_it_end - v_it;
+        for (unsigned long index = graph_size - 1; index < graph_size; --index) {
+            auto vertex = graph[index];
             if (vertex.cv > threshold_level) {
-                to_remove.push_back(vertex_i);
+                boost::clear_vertex(index, graph);
+                boost::remove_vertex(index, graph);
             }
-        }
-
-        for (auto &e : to_remove) {
-            automaton.remove_state(e);
         }
     }
 
@@ -190,9 +202,9 @@ namespace active_learning {
         looped_edges_t new_edges;
         auto &graph = automaton.get_mutable_graph();
 
-        for (const auto &couple : *couples) {
-            auto state1 = couple.first;
-            auto state2 = couple.second;
+        for (const auto &couple : couples) {
+            auto state1 = get_vertex_by_name(automaton, couple.first);
+            auto state2 = get_vertex_by_name(automaton, couple.second);
 
             for (auto &edge : get_edges_from_state(automaton, state1)) {
                 auto edge_prop = graph[edge];
@@ -223,28 +235,29 @@ namespace active_learning {
         auto &graph = automaton.get_mutable_graph();
         // Coloring init (others)
         for (auto edge_it = boost::edges(graph); edge_it.first != edge_it.second; ++edge_it.first) {
-            automaton.get_mutable_init_edge_color().insert(*edge_it.first);
+            automaton.get_mutable_init_edge_color().insert(make_pair_comp((*edge_it.first).m_source, (*edge_it.first).m_target));
         }
 
         // Coloring loop in no cond edges
         for (auto &edge : new_edges.first) {
-            automaton.get_mutable_loop_in_no_cond_color().insert(edge);
-            automaton.get_mutable_init_edge_color().erase(edge);
+            automaton.get_mutable_loop_in_no_cond_color().insert(make_pair_comp(edge.m_source, edge.m_target));
+            automaton.get_mutable_init_edge_color().erase(make_pair_comp(edge.m_source, edge.m_target));
         }
 
         // Coloring loop in with cond edges
         for (auto &edge : new_edges.second) {
-            automaton.get_mutable_loop_in_with_cond_color().insert(edge);
-            automaton.get_mutable_init_edge_color().erase(edge);
+            automaton.get_mutable_loop_in_with_cond_color().insert(make_pair_comp(edge.m_source, edge.m_target));
+            automaton.get_mutable_init_edge_color().erase(make_pair_comp(edge.m_source, edge.m_target));
         }
 
         // Coloring loop out edges
         for (auto &loop_in_edge_with_cond : automaton.get_mutable_loop_in_with_cond_color()) {
-            for (auto &other_edge_from_same_source : get_edges_from_state(automaton, boost::source(loop_in_edge_with_cond, graph))) {
-                if (loop_in_edge_with_cond != other_edge_from_same_source
-                    and graph[loop_in_edge_with_cond].symbol == graph[other_edge_from_same_source].symbol) {
-                    automaton.get_mutable_loop_out_color().insert(other_edge_from_same_source);
-                    automaton.get_mutable_init_edge_color().erase(other_edge_from_same_source);
+            for (auto &other_edge_from_same_source : get_edges_from_state(automaton, loop_in_edge_with_cond.first)) {
+                if ((loop_in_edge_with_cond.first != other_edge_from_same_source.m_target
+                        or loop_in_edge_with_cond.second != other_edge_from_same_source.m_source)
+                        and automaton.get_edge(loop_in_edge_with_cond.first, loop_in_edge_with_cond.second).symbol == graph[other_edge_from_same_source].symbol) {
+                    automaton.get_mutable_loop_out_color().insert(make_pair_comp(other_edge_from_same_source.m_source, other_edge_from_same_source.m_target));
+                    automaton.get_mutable_init_edge_color().erase(make_pair_comp(other_edge_from_same_source.m_source, other_edge_from_same_source.m_target));
                 }
             }
         }

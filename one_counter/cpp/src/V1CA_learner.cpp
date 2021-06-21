@@ -59,7 +59,6 @@ namespace active_learning {
                     }
 
                     std::string uc = u + c;
-                    std::cout << "make_rst_closed: trying with '" << u << "' + " << c << '\n';
                     auto uc_O = get_congruence_set(uc, rst, teacher_, alphabet_);
                     int cv_uc = static_cast<int>(i) + val;
 

@@ -53,7 +53,7 @@ namespace active_learning {
     }
 
     bool RST::RST_table::at(size_t row_index, size_t col_index) const {
-        return data_[col_index][row_index];
+        return data_[row_index][col_index];
     }
 
     bool RST::RST_table::at(const std::string &row, const std::string &col) const {
