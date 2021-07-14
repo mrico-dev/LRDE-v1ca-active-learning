@@ -362,6 +362,7 @@ namespace active_learning {
         auto &graph1 = automaton1.get_mutable_graph();
         auto &graph2 = automaton2.get_mutable_graph();
 
+        // TODO Handle final states (when they need to added or removed)
         for (auto edges_it1 = boost::out_edges(curr1, graph1); edges_it1.first != edges_it1.second; ++edges_it1.first) {
 
             // Checking if both state have an outer edge in common
