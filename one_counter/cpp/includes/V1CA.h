@@ -136,6 +136,8 @@ namespace active_learning {
         // recursive function
         bool is_isomorphic_to_(V1CA &other, states_t &states1, states_t &states2, couples_t &res, label_map_t &);
 
+        bool empty_(std::set<vertex_descriptor_t> &visited, vertex_descriptor_t curr);
+
         bool is_state_isomorphic(V1CA &other, vertex_descriptor_t state1, vertex_descriptor_t state2, label_map_t &);
 
     public:
@@ -150,6 +152,16 @@ namespace active_learning {
         V1CA_edge get_edge(vertex_descriptor_t src, vertex_descriptor_t dest);
 
         std::optional<couples_t> is_isomorphic_to(V1CA &other, unsigned int from_level1, unsigned from_level2);
+
+        V1CA inter_with(V1CA &other);
+
+        V1CA complement();
+
+        bool empty();
+
+        bool is_equivalent_to(V1CA& other);
+
+        bool is_subset_of(V1CA& other);
 
         void display(const std::string &path);
 

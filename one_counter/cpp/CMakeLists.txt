@@ -9,6 +9,7 @@ set(src_engine
         src/V1CA_builder.cpp
         src/manual_teacher.cpp
         src/semi_manual_teacher.cpp
+        src/automatic_teacher.cpp
         )
 
 include_directories(includes)

@@ -4,6 +4,7 @@
 #include <boost/graph/graphviz.hpp>
 #include <boost/graph/adjacency_list.hpp>
 
+#include "V1CA_builder.h"
 #include "V1CA.h"
 
 namespace active_learning {
@@ -313,6 +314,114 @@ namespace active_learning {
         }
 
         throw std::invalid_argument("get_edge(): could not find edge with given src and dest.");
+    }
+
+    bool V1CA::is_equivalent_to(V1CA &other) {
+        return is_subset_of(other) and other.is_subset_of(*this);
+    }
+
+    bool V1CA::is_subset_of(V1CA& other) {
+        auto other_complement = other.complement();
+        return inter_with(other_complement).empty();
+    }
+
+    bool V1CA::empty_(std::set<V1CA::vertex_descriptor_t> &visited, V1CA::vertex_descriptor_t curr) {
+
+        if (visited.contains(curr))
+            return true;
+        visited.insert(curr);
+
+        if (is_final(graph[curr]))
+            return false;
+
+        for (auto edges_it = boost::out_edges(curr, graph); edges_it.first != edges_it.second; ++edges_it.first)
+            if (!empty_(visited, boost::target(*edges_it.first, graph)))
+                return false;
+
+        return true;
+    }
+
+    bool V1CA::empty(){
+        // Doing a recursive traversal and checking whether there is an accessible final state
+        std::set<V1CA::vertex_descriptor_t> visited;
+        // There need to be only one starting state though
+        auto init_state = V1CA_builder::get_vertex_by_name(*this, *init_states_.begin());
+        return empty_(visited, init_state);
+    }
+
+    void inter_with_(V1CA &automaton1, V1CA &automaton2,
+                    std::set<V1CA::vertex_descriptor_t> &visited1,
+                    std::set<V1CA::vertex_descriptor_t> &visited2,
+                    V1CA::vertex_descriptor_t curr1, V1CA::vertex_descriptor_t curr2,
+                    V1CA &res, V1CA::vertex_descriptor_t res_curr) {
+        if (visited1.contains(curr1) or visited2.contains(curr2))
+            return;
+        visited1.insert(curr1);
+        visited2.insert(curr2);
+
+        auto &graph1 = automaton1.get_mutable_graph();
+        auto &graph2 = automaton2.get_mutable_graph();
+
+        for (auto edges_it1 = boost::out_edges(curr1, graph1); edges_it1.first != edges_it1.second; ++edges_it1.first) {
+
+            // Checking if both state have an outer edge in common
+            auto contains = false;
+            auto symbol = '\0';
+            V1CA::vertex_descriptor_t dest2 = 0;
+            for (auto edges_it2 = boost::out_edges(curr1, graph1); edges_it2.first != edges_it2.second and not contains; ++edges_it2.first) {
+                contains = graph1[*edges_it1.first].symbol == graph2[*edges_it2.first].symbol;
+                symbol = graph1[*edges_it1.first].symbol;
+                dest2 = boost::target(*edges_it2.first, graph2);
+            }
+
+            if (contains) {
+                // Adding new vertex to result
+                auto vertex = V1CA_vertex(graph1[curr1].name + graph2[curr2].name, graph1[curr1].cv);
+                auto new_v = boost::add_vertex(vertex, res.get_mutable_graph());
+                auto edge = V1CA_edge(symbol);
+                boost::add_edge(res_curr, new_v, edge, res.get_mutable_graph());
+                auto dest1 = boost::target(*edges_it1.first, graph1);
+
+                inter_with_(automaton1, automaton2, visited1, visited2, dest1, dest2, res, new_v);
+            }
+        }
+
+    }
+
+    V1CA V1CA::inter_with(V1CA &other) {
+        auto &automaton1 = *this;
+        auto &automaton2 = other;
+        // Initializing result v1ca
+        V1CA res;
+        auto res_graph = res.get_mutable_graph();
+        auto init_v = V1CA_vertex("", 0);
+        auto new_v = boost::add_vertex(init_v, res_graph);
+
+        // Initialising set of visited states
+        std::set<V1CA::vertex_descriptor_t> visited;
+        std::set<V1CA::vertex_descriptor_t> visited_other;
+
+        // Getting init state
+        auto init_state1 = V1CA_builder::get_vertex_by_name(automaton1, *automaton1.init_states_.begin());
+        auto init_state2 = V1CA_builder::get_vertex_by_name(automaton2, *automaton2.init_states_.begin());
+
+        inter_with_(automaton1, automaton2, visited, visited_other, init_state1, init_state2, res, new_v);
+
+        return res;
+    }
+
+    V1CA V1CA::complement() {
+        V1CA res = V1CA(*this);
+        auto &g = res.get_mutable_graph();
+        for (auto v_it = boost::vertices(g); v_it.first != v_it.second; ++v_it.first) {
+            auto v = *v_it.first;
+            if (not res.final_states_.contains(graph[v].name))
+                res.final_states_.insert(graph[v].name);
+            else
+                res.final_states_.erase(graph[v].name);
+        }
+
+        return res;
     }
 
     V1CA_vertex::V1CA_vertex(std::string name, unsigned int cv) : name(std::move(name)), cv(cv) {}
