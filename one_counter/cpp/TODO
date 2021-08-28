@@ -1,5 +1,6 @@
 TODO
 
-Opti using Outedges and Inedges
+- Add documentation on functions
+- Optimize using Outedges and Inedges
 
-Check if there's a case where empty won't work (with edge condition )
+- Check if there's a case where empty won't work (with edge condition )
