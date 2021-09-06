@@ -1,0 +1,51 @@
+This file can be ignored
+Ce fichier contient des notes personnels pour le developpement.
+
+Note:
+
+Sigma_0,t -> ensemble de tous les mots de sigma avec profondeur <= t 
+
+3 * t tables: Pour un niveau i, 3 tables pour les mots de Sigma_int, Sigma_ret et Sigma_call
+
+niveau t: pas de table pour call
+niveau 0: pas de table pour ret
+
+u et v O-equivalent: cv(u) = cv(v) 
+                     et pout tout w dans S_i (i = cv(u)),
+                        T(uw) = T(vw)
+
+[u]_O = {v dans R U R.Sigma | u ~O v}
+
+Table fermee: Vu dans R_i, Va dans Sigma,
+                [ua]_O ∩ R_(i+X(a)) != 0
+
+Table consistante: Vu, v dans R_i, Va dans Sigma,
+                u ~O v => ua ~O va
+
+-- R_i sous ensemble de {w dans Sigma*_0,t | cv(w) = i}
+-- S_i sous ensemble de Sigma*
+
+-- Vu dans R_i, Vv dans S_i, cv(uv) = 0
+-- Vw dans D, T(w) = 1 <=> w dans L
+-- R_i est prefix closed et S_i est suffix closed
+
+Not closed:
+If it is not closed, then there is a representative u ∈ R_i, i ∈ {0, ... , t},
+and an a ∈ Σ such that the equivalence class [ua]_O is not present in the table,
+i.e. [ua]_O ∩ Ri+X(a) = ∅ . In this case we add ua as representative of the new equivalence
+class to R_i+X(a) and extend T by asking membership queries.
+
+Not consistent:
+If the table is not consistent, we proceed in a similar manner:
+Since there are u ~O v, w ∈  S_cv(u)+X(a) and a ∈ Σ such that T(uaw) != T(vaw),
+we add aw to S_cv(u) and extend RST
+
+
+PROBLEME:
+Si [u]_O l'ensemble de v tq u ~ v,
+et fermee => [ua] inter R pas vide
+SAUF QUE, pour un a tq X(a) = +1 et R_max (i = max(i)),
+c'est jamais ferme
+REPONSE:
+fermee ne compte pas pour i = 0 et a dans Sigma_ret, et i = t et a dans Sigma_call
+
