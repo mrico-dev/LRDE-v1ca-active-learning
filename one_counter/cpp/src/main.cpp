@@ -4,6 +4,9 @@
 #include "manual_teacher.h"
 #include "V1CA_learner.h"
 
+/**
+ * @return true if the word is in the language {a^n.b^n}
+ */
 bool is_anbn(const std::string &word) {
     auto i = 0u;
     while (i < word.size() and word[i] == 'a')
@@ -22,11 +25,42 @@ bool is_anbn(const std::string &word) {
     return i == supposed_length;
 }
 
-int main() {
+/**
+ * @return true if the word is in the language {x*.a^n.y*.b^n.z*}
+ */
+bool is_xanybnz(const std::string &word) {
+    auto i = 0u;
+    while (i < word.size() and word[i] == 'x')
+        ++i;
 
+    auto n1 = 0u;
+    while (i < word.size() and word[i] == 'a') {
+        ++i;
+        ++n1;
+    }
+
+    while (i < word.size() and word[i] == 'y')
+        ++i;
+
+    auto n2 = 0u;
+    while (i < word.size() and word[i] == 'b') {
+        ++i;
+        ++n2;
+    }
+
+    while (i < word.size() and word[i] == 'z')
+        ++i;
+
+    return n1 == n2 and i == word.size();
+}
+
+int main() {
     active_learning::alphabet_t alphabet;
     alphabet.insert({'a', 1});
     alphabet.insert({'b', -1});
+    // alphabet.insert({'x', 0});
+    // alphabet.insert({'y', 0});
+    // alphabet.insert({'z', 0});
 
     auto teacher = active_learning::semi_manual_teacher(is_anbn, alphabet);
 
@@ -36,4 +70,6 @@ int main() {
     std::cout << teacher.sum_up_msg() << std::endl;
 
     res.display("res");
+
+    return 0;
 }

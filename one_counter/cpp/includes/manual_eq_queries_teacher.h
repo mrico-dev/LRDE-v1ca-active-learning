@@ -44,14 +44,14 @@ namespace active_learning {
                 if (user_input == "OK" or user_input == "ok" or user_input == "Ok" or user_input == "oK")
                     return std::nullopt;
 
-            } while ( !is_from_alphabet(user_input, alphabet_) or get_cv(user_input, alphabet_));
+                // input counter example must be from alphabet, and its cv must be 0
+            } while (!is_from_alphabet(user_input, alphabet_) or get_cv(user_input, alphabet_));
 
             return user_input;
         }
 
     protected:
         alphabet_t alphabet_;
-
     };
 }
 

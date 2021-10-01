@@ -165,8 +165,6 @@ namespace active_learning {
 
         void display(const std::string &path);
 
-        void remove_state(vertex_descriptor_t vertex_descriptor);
-
         bool is_final(const V1CA_vertex &state);
 
         bool is_init(const V1CA_vertex &state);
@@ -174,8 +172,6 @@ namespace active_learning {
         std::optional<unsigned long> get_next_index(vertex_descriptor_t state_index, char c);
 
         std::optional<unsigned long> get_prev_index(vertex_descriptor_t state_index, char c);
-
-        std::optional<int> get_period_cv();
 
         void set_period_cv(int cv);
 

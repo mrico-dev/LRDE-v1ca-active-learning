@@ -78,9 +78,11 @@ namespace active_learning {
 
         void add_col_using_query(const std::string &name, int cv, teacher &teacher, const std::string &context);
 
-        void add_row_using_query_if_not_present(const std::string &name, int cv, teacher &teacher, const std::string &context);
+        void add_row_using_query_if_not_present(const std::string &name, int cv, teacher &teacher,
+                                                const std::string &context);
 
-        void add_col_using_query_if_not_present(const std::string &name, int cv, teacher &teacher, const std::string &context);
+        void add_col_using_query_if_not_present(const std::string &name, int cv, teacher &teacher,
+                                                const std::string &context);
 
         void add_counter_example(const std::string &ce, teacher &teacher, alphabet_t &alphabet);
 

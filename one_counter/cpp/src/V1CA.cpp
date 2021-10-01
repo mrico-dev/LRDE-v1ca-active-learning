@@ -9,6 +9,16 @@
 
 namespace active_learning {
 
+    /**
+     * Creates a new transition between two states using the states name.
+     * This function is not optimized as we need to go through the graph to find the state names.
+     * Try to keep a vertex_descriptor if possible instead of using this function.
+     * Raise an runtime_error if the edge cound not be created and
+     * a invalid_argument error if one of the state does not exist.
+     * @param src_name The name of the first state
+     * @param dest_name The name of the second state
+     * @param symbol The symbol associated with the new transition
+     */
     void V1CA::link_by_name(std::string src_name, std::string dest_name, char symbol) {
         for (auto vi = boost::vertices(graph); vi.first != vi.second; ++vi.first) {
             if (graph[*vi.first].name == src_name) {
@@ -28,18 +38,40 @@ namespace active_learning {
                 "link_by_name(): Could not find states with names '" + src_name + "' and '" + dest_name + "'.");
     }
 
+    /**
+     * Class getter
+     * @return The mutable adjency_list (graph_t) object
+     */
     V1CA::graph_t &V1CA::get_mutable_graph() {
         return graph;
     }
 
+    /**
+     * Tell whether a state is a final state using its properties
+     * This works based on the fact that all states have different names
+     * @param state The name and cv of the state
+     * @return true if the state is final, false otherwise
+     */
     bool V1CA::is_final(const V1CA_vertex &state) {
         return final_states_.contains(state.name);
     }
 
+    /**
+     * Tell whether a state is the initial state using its properties
+     * This works based on the fact that all states have different names
+     * @param state The name and cv of the state
+     * @return true if the state is the initial state, false otherwise
+     */
     bool V1CA::is_init(const V1CA_vertex &state) {
         return init_states_.contains(state.name);
     }
 
+    /**
+     * Returns the successor of a state using a specific symbol
+     * @param state_index The state whose successor needs to be found
+     * @param c The symbol used as the transition between the two states
+     * @return The target state if it exists, std::nullopt otherwise
+     */
     std::optional<unsigned long> V1CA::get_next_index(vertex_descriptor_t state_index, char c) {
 
         for (auto edge_it = boost::edges(graph); edge_it.first != edge_it.second; ++edge_it.first) {
@@ -51,6 +83,12 @@ namespace active_learning {
         return std::nullopt;
     }
 
+    /**
+     * Returns the predecessor of a state using a specific symbol
+     * @param state_index The state whose predecessor needs to be found
+     * @param c The symbol used as the transition between the two states
+     * @return The source state if it exists, std::nullopt otherwise
+     */
     std::optional<unsigned long> V1CA::get_prev_index(vertex_descriptor_t state_index, char c) {
 
         for (auto edge_it = boost::edges(graph); edge_it.first != edge_it.second; ++edge_it.first) {
@@ -62,6 +100,18 @@ namespace active_learning {
         return std::nullopt;
     }
 
+    /**
+     * Tell whether two states of two V1CA are isomorphic.
+     * To do so, we check if they are locally isomorphic, and then if all their neighbors
+     * are recursively isomorphic as well.
+     * A label_map is kept to identify states that were already visited.
+     * @param other The other V1CA that contains state2
+     * @param state1 The first state of the V1CA
+     * @param state2 The other state of the other V1CA
+     * @param label_map The map to keep track of the visited states, and give them ids to make sure the isomophism
+     * check is not locally biases
+     * @return true if states are isomorphic, false otherwise.
+     */
     bool V1CA::is_state_isomorphic(V1CA &other, vertex_descriptor_t state1, vertex_descriptor_t state2,
             label_map_t &label_map) {
 
@@ -154,6 +204,9 @@ namespace active_learning {
         return true;
     }
 
+    /**
+     * Recursive implementation of is_isomorphic_to
+     */
     bool V1CA::is_isomorphic_to_(V1CA &other, states_t &states1, states_t &states2, couples_t &res,
              label_map_t &label_map) {
         if (states1.empty() and states2.empty()) {
@@ -186,6 +239,13 @@ namespace active_learning {
         return false;
     }
 
+    /**
+     * Tell whether two V1CA are isomorphic, and find a couples of equivalent states.
+     * @param other The other V1CA
+     * @param from_level1 The level where reference states are taken from in the first V1CA
+     * @param from_level2 The level where reference states are taken from in the other V1CA
+     * @return Couples of matching equivalent states if the V1CAs are equivalent, std::nullopt if not.
+     */
     std::optional<V1CA::couples_t>
     V1CA::is_isomorphic_to(V1CA &other, unsigned int from_level1, unsigned from_level2) {
 
@@ -205,6 +265,11 @@ namespace active_learning {
         return std::nullopt;
     }
 
+    /**
+     * Extract all states of a specific level (counter value) of a V1CA.
+     * @param level The level of the states
+     * @return A list of the states
+     */
     V1CA::states_t V1CA::get_all_states_of_level(unsigned int level) {
         states_t res;
         for (auto vp = boost::vertices(graph); vp.first != vp.second; ++vp.first) {
@@ -217,6 +282,11 @@ namespace active_learning {
         return res;
     }
 
+    /**
+     * Export the V1CA as a png and .dot file.
+     * This function requires to be on linux and have dot installed to get the .png file
+     * @param path The path to the V1CA png and dot file, without the extenstion
+     */
     void V1CA::display(const std::string &path) {
 
         // Writing dot file
@@ -227,10 +297,19 @@ namespace active_learning {
                 vertex_writer<V1CA>(*this),
                 edge_writer<V1CA, alphabet_t>(*this, *alphabet_));
 
+        // Creating png file
         // Hoping that you are on linux and have dot installed
         system(("dot -Tpng " + full_path + " > " + path + ".png").c_str());
     }
 
+    /**
+     * Create a V1CA using information about the automaton
+     * @param states A set of state names
+     * @param initial_states The names of the initial states (should be one)
+     * @param final_states The names of the final states
+     * @param al The reference target language alphabet
+     * @param edges The names of source and targets of edges
+     */
     V1CA::V1CA(std::vector<V1CA_vertex> &states, std::vector<V1CA_vertex> &initial_states,
                std::vector<V1CA_vertex> &final_states, const alphabet_t &al,
                std::vector<std::tuple<V1CA_vertex, V1CA_vertex, char>> &edges) {
@@ -254,57 +333,92 @@ namespace active_learning {
         }
     }
 
+    /**
+     * Creates an empty V1CA
+     */
     V1CA::V1CA() {
         alphabet_ = std::make_shared<alphabet_t>();
     }
 
-    std::optional<int> V1CA::get_period_cv() {
-        if (period_cv_ < 0)
-            return std::nullopt;
-
-        return period_cv_;
-    }
-
+    /**
+     * Class setter
+     * @param cv The counter value of were the periodic part of the V1CA starts
+     */
     void V1CA::set_period_cv(int cv) {
         period_cv_ = cv;
     }
 
-    void V1CA::remove_state(vertex_descriptor_t vertex_descriptor) {
-        boost::remove_vertex(vertex_descriptor, graph);
-    }
-
+    /**
+     * Class setter
+     * @param periodic Whether the V1CA is periodic
+     */
     void V1CA::set_periodic(bool periodic) {
         periodic_ = periodic;
     }
 
+    /**
+     * Class setter
+     * @param colored whether the V1CA is colored (if there is conditions on edges)
+     */
     void V1CA::set_colored(bool colored) {
         colored_ = colored;
     }
 
+    /**
+     * Class getter
+     * @return The set of edges that loop in back in the periodic part with no condition
+     */
     V1CA::graph_color_t &V1CA::get_mutable_loop_in_no_cond_color() {
         return std::get<1>(colors_);
     }
 
+    /**
+     * Class getter
+     * @return The set of edges that where initially already there before coloring
+     */
     V1CA::graph_color_t &V1CA::get_mutable_init_edge_color() {
         return std::get<0>(colors_);
     }
 
+    /**
+     * Class getter
+     * @return The set of edges that loop in back in the periodic part with a condition on the cv
+     */
     V1CA::graph_color_t &V1CA::get_mutable_loop_in_with_cond_color() {
         return std::get<2>(colors_);
     }
 
+    /**
+     * Class getter
+     * @return The set of edges that loop out of the periodic part with a condition on the cv
+     */
     V1CA::graph_color_t &V1CA::get_mutable_loop_out_color() {
         return std::get<3>(colors_);
     }
 
+    /**
+     * Class getter
+     * @return Whether the graph is colored, i.e if there is conditions on the edges
+     */
     bool V1CA::colored() const {
         return colored_;
     }
 
+    /**
+     * Class getter
+     * @return The counter value of where the periodic part of the V1CA starts, if a periodic structure was found;
+     * -1 otherwise.
+     */
     int V1CA::period_cv() const {
         return (periodic_ ? period_cv_ : -1);
     }
 
+    /**
+     * Get the edge between two states in the automaton
+     * @param src The source state
+     * @param dest The target state
+     * @return The V1CA_edge object
+     */
     V1CA_edge V1CA::get_edge(V1CA::vertex_descriptor_t src, V1CA::vertex_descriptor_t dest) {
         for (auto e_it = boost::edges(graph); e_it.first != e_it.second; ++e_it.first) {
             auto edge = *e_it.first;
@@ -316,15 +430,28 @@ namespace active_learning {
         throw std::invalid_argument("get_edge(): could not find edge with given src and dest.");
     }
 
+    /**
+     * Tell whether is two V1CA are equivalent, i.e if their language are the same.
+     * @param other The other V1CA.
+     * @return true if they are equivalent, false otherwise.
+     */
     bool V1CA::is_equivalent_to(V1CA &other) {
         return is_subset_of(other) and other.is_subset_of(*this);
     }
 
+    /**
+     * Tell whether the language of this V1CA is a subset of the language of another V1CA.
+     * @param other The other V1CA.
+     * @return true if it is a subset, false otherwise.
+     */
     bool V1CA::is_subset_of(V1CA& other) {
         auto other_complement = other.complement();
         return inter_with(other_complement).empty();
     }
 
+    /**
+     * Recusrive function for empty()
+     */
     bool V1CA::empty_(std::set<V1CA::vertex_descriptor_t> &visited, V1CA::vertex_descriptor_t curr) {
 
         if (visited.contains(curr))
@@ -341,6 +468,10 @@ namespace active_learning {
         return true;
     }
 
+    /**
+     * Tell whether the language of a V1CA is empty, i.e if the V1CA cannot accept any word.
+     * @return true if empty, false otherwise.
+     */
     bool V1CA::empty(){
         // Doing a recursive traversal and checking whether there is an accessible final state
         std::set<V1CA::vertex_descriptor_t> visited;
@@ -349,6 +480,9 @@ namespace active_learning {
         return empty_(visited, init_state);
     }
 
+    /**
+     * Recursive function for inter_with()
+     */
     void inter_with_(V1CA &automaton1, V1CA &automaton2,
                     std::set<V1CA::vertex_descriptor_t> &visited1,
                     std::set<V1CA::vertex_descriptor_t> &visited2,
@@ -389,6 +523,11 @@ namespace active_learning {
 
     }
 
+    /**
+     * Get the V1CA whose language is the intersection of the languages of two given V1CA
+     * @param other The other V1CA
+     * @return The intersection V1CA
+     */
     V1CA V1CA::inter_with(V1CA &other) {
         auto &automaton1 = *this;
         auto &automaton2 = other;
@@ -411,6 +550,10 @@ namespace active_learning {
         return res;
     }
 
+    /**
+     * Get a V1CA whose language is the complementary language of this V1CA
+     * @return The complement V1CA
+     */
     V1CA V1CA::complement() {
         V1CA res = V1CA(*this);
         auto &g = res.get_mutable_graph();
@@ -425,7 +568,16 @@ namespace active_learning {
         return res;
     }
 
+    /**
+     * Constructor for a state attributes object
+     * @param name The name of the vertex (should be unique)
+     * @param cv The counter value of the state (should match the name)
+     */
     V1CA_vertex::V1CA_vertex(std::string name, unsigned int cv) : name(std::move(name)), cv(cv) {}
 
+    /**
+     * Constructor for a transition attribute object
+     * @param symbol the symbol of the transition
+     */
     V1CA_edge::V1CA_edge(char symbol) : symbol(symbol) {}
 }

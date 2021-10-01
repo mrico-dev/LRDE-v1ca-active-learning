@@ -8,6 +8,12 @@ namespace active_learning {
 
     V1CA_learner::V1CA_learner(teacher &teacher, alphabet_t &alphabet) : teacher_(teacher), alphabet_(alphabet) {}
 
+    /**
+     * Make the RST consistent
+     * The algorithm is the following (TODO)
+     * @param rst The RST
+     * @return true if the RST was already consistent, false if a change was made
+     */
     bool V1CA_learner::make_rst_consistent(RST &rst) {
         for (auto &table : rst.get_tables()) {
             for (auto u_i = 0u; u_i < table.get_row_labels().size(); ++u_i) {
@@ -25,7 +31,7 @@ namespace active_learning {
                             }
                             if (!is_O_equivalent(uc, vc, rst, teacher_, alphabet_)) {
                                 if (cv_uc > static_cast<int>(rst.size())) {
-                                    throw new std::runtime_error("make_rst_consistent(): Unexpected cv which is out of bound of rst was encountered.");
+                                    throw std::runtime_error("make_rst_consistent(): Unexpected cv which is out of bound of rst was encountered.");
                                 }
                                 auto &uc_table = rst.get_tables()[cv_uc];
                                 for (auto &clabel : uc_table.get_col_labels()) {  // FIXME Small opti here (on at())
@@ -46,6 +52,12 @@ namespace active_learning {
         return true;
     }
 
+    /**
+     * Make the RST closed
+     * The algorithm is the following (TODO)
+     * @param rst The RST
+     * @return true if the RST was already closed, false if a change was made
+     */
     bool V1CA_learner::make_rst_closed(RST &rst) {
         for (size_t i = 0; i < rst.size(); ++i) {
             auto &table = rst.get_tables()[i];
@@ -92,6 +104,11 @@ namespace active_learning {
         return true;
     }
 
+    /**
+     * Lean a V1CA from the given alphabet and teacher
+     * @param verbose Set to true for debug printing
+     * @return The obtained V1CA
+     */
     V1CA V1CA_learner::learn_V1CA(bool verbose)
     {
         // Initialising rst with "" and "" as only labels for rows and columns
@@ -105,7 +122,7 @@ namespace active_learning {
             auto is_consistent = false;
             auto is_closed = false;
 
-            // Looping until RST is not closed and consistent
+            // Looping while RST is not closed and consistent
             while (!is_consistent or !is_closed) {
                 is_consistent = make_rst_consistent(rst);
                 is_closed = make_rst_closed(rst);

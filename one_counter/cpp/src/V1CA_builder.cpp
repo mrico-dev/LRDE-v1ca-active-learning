@@ -3,6 +3,13 @@
 
 namespace active_learning {
 
+    /**
+     * Build a behaviour graph (with a V1CA implementation) from a RST
+     * @param rst The source RST
+     * @param alphabet The target language reference alphabet
+     * @param teacher The teacher that may be used for membership queries
+     * @return The corresponding behaviour graph as a V1CA object
+     */
     V1CA V1CA_builder::build_behaviour_graph_from_RST(RST rst, alphabet_t &alphabet, teacher &teacher) {
         // Removing duplicate rows
         RST no_dup_rst = rst.remove_duplicate_rows();
@@ -36,6 +43,14 @@ namespace active_learning {
         return behaviour_graph;
     }
 
+    /**
+     * Get the edges of a behaviour graph using a RST.
+     * @param no_dup_rst The source RST with no duplicated rows
+     * @param alphabet The reference target language alphabet
+     * @param states A list of the states of the result behaviour graph
+     * @param teacher A teacher that may be used for membership queries
+     * @return A set of edges deduced from the RST
+     */
     V1CA_builder::edges_t
     V1CA_builder::get_edges_from_rst(RST &no_dup_rst, alphabet_t &alphabet, std::vector<V1CA_vertex> &states,
                                      teacher &teacher) {
@@ -61,6 +76,18 @@ namespace active_learning {
         return res;
     }
 
+    /**
+     * Find the name of the corresponding row in a RST from a given word.
+     * Note that the given word may not be the name of a row of the RST.
+     * @param rst The source RST
+     * @param state_word The word which row needs to be found
+     * @param cv The counter value of the state_word
+     * @param teacher A teacher that may be used for membership queries.
+     * @return The name and cv of the matching row as a V1CA_Vertex object
+     * @throws invalid_argument if the cv is incorrect
+     * @throws runtime_error if no matching state was found. This may be due to a RST that was not closed
+     * or an out of context state_word.
+     */
     V1CA_vertex V1CA_builder::find_state_from_word(RST &rst, const std::string &state_word, int cv, teacher &teacher) {
 
         if (cv < 0 or cv >= static_cast<int>(rst.size()))
@@ -89,6 +116,12 @@ namespace active_learning {
                                  " Either the RST is not closed, or the word that was asked is out of context.");
     }
 
+    /**
+     * Get the vertex_descriptor of a state using its name
+     * @param automaton The V1CA
+     * @param name The name of the state
+     * @return The state as a vertex_descriptor
+     */
     V1CA::vertex_descriptor_t V1CA_builder::get_vertex_by_name(V1CA& automaton, const std::string &name) {
         auto &graph = automaton.get_mutable_graph();
         auto v_its = boost::vertices(graph);
@@ -100,6 +133,13 @@ namespace active_learning {
         throw std::invalid_argument("get_vertex_by_name(): Could not find vertex");
     }
 
+    /**
+     * Get a subgraph of the given V1CA containing all states of levels from level_down to level_top (included)
+     * @param automaton The original V1CA
+     * @param level_down The bottom level
+     * @param level_top The top level
+     * @return A copy of the V1CA only containing states from level_down to level_top
+     */
     V1CA V1CA_builder::get_subgraph(V1CA &automaton, unsigned int level_down, unsigned int level_top) {
         auto res = V1CA(automaton);
         auto &graph = res.get_mutable_graph();
@@ -119,6 +159,14 @@ namespace active_learning {
         return res;
     }
 
+    /**
+     * Try to find a periodic structure of a specific width stating at a specific level inside the V1CA.
+     * @param level The level where the periodic structure should start
+     * @param width The width the periodic structure should be
+     * @param automaton The given V1CA
+     * @return If a period was find, returns the names of the states that are ismorphic
+     * at level "level" and level "level + width"
+     */
     std::optional<V1CA_builder::couples_t>
     V1CA_builder::find_period(unsigned int level, unsigned int width, V1CA &automaton) {
         if (!width)
@@ -130,6 +178,14 @@ namespace active_learning {
         return subgraph1.is_isomorphic_to(subgraph2, level, level + width);
     }
 
+    /**
+     * Transform the behaviour graph into a V1CA (in-place) by trying to find a periodic structure anywhere in the graph
+     * @param automaton The given V1CA
+     * @param rst_no_dup The RST with no duplicated rows
+     * @param alphabet The reference target language alphabet
+     * @param verbose To be set true for debug printing
+     * @return The given V1CA
+     */
     V1CA &V1CA_builder::behaviour_graph_to_V1CA(V1CA &automaton, RST &rst_no_dup, alphabet_t &alphabet,
                                                 bool verbose) {
         if (rst_no_dup.size() < 3) {
@@ -167,6 +223,11 @@ namespace active_learning {
         return automaton;
     }
 
+    /**
+     * Delete all states of a V1CA which counter value is more than the given threshold
+     * @param automaton The given V1CA
+     * @param threshold_level The threshold level
+     */
     void V1CA_builder::delete_high_levels(V1CA &automaton, unsigned int threshold_level) {
         auto &graph = automaton.get_mutable_graph();
         // Using a weird workaround on property deletion with VecS
@@ -182,6 +243,12 @@ namespace active_learning {
         }
     }
 
+    /**
+     * Get all transitions of a V1CA whose source is the given state
+     * @param automaton The given V1CA
+     * @param state The source state
+     * @return A list of all outer transitions from the state
+     */
     V1CA_builder::edges_descs_t V1CA_builder::get_edges_from_state(V1CA &automaton, V1CA::vertex_descriptor_t state) {
         edges_descs_t res;
         auto &graph = automaton.get_mutable_graph();
@@ -195,6 +262,13 @@ namespace active_learning {
         return res;
     }
 
+    /**
+     * Link the behaviour graph (in-place) so it becomes a V1CA, by linking the periodic structure with itself
+     * @param automaton The given behaviour-graph/V1CA
+     * @param couples The states that are isomorphic to one-another (can be obtained by looking for an isomorphism)
+     * @param alphabet The target language alphabet
+     * @return A list of the new edges that were created
+     */
     V1CA_builder::looped_edges_t
     V1CA_builder::link_period(V1CA &automaton, V1CA_builder::couples_t &couples, alphabet_t &alphabet) {
         automaton.set_periodic(true);
@@ -231,6 +305,11 @@ namespace active_learning {
         return new_edges;
     }
 
+    /**
+     * Color the V1CA by putting conditions on specific edges
+     * @param automaton The given V1CA
+     * @param new_edges Edges that were added when looping on the periodic structure
+     */
     void V1CA_builder::color_edges(V1CA &automaton, V1CA_builder::looped_edges_t &new_edges) {
         auto &graph = automaton.get_mutable_graph();
         // Coloring init (others)

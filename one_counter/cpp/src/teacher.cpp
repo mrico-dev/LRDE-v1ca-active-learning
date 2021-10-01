@@ -15,7 +15,7 @@ namespace active_learning {
     }
 
     std::string cached_teacher::sum_up_msg() const {
-        return "Learning took " + std::to_string(query_cache_.size()) + " belonging queries.";
+        return "Learning took " + std::to_string(query_cache_.size()) + " membership queries.";
     }
 
     std::string teacher::sum_up_msg() const {
