@@ -41,6 +41,6 @@ std::string active_learning::automatic_teacher::find_counter_example(active_lear
 active_learning::automatic_teacher::automatic_teacher(std::function<bool(const std::string &)> checkFunc,
                                                       active_learning::V1CA &behaviourRef,
                                                       active_learning::V1CA &automatonRef,
-                                                      active_learning::alphabet_t alphabet) : check_func_(std::move(
+                                                      active_learning::visibly_alphabet_t alphabet) : check_func_(std::move(
         checkFunc)), behaviour_ref_(behaviourRef), automaton_ref_(automatonRef), alphabet_(std::move(alphabet)) {}
 

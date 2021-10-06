@@ -4,7 +4,7 @@
 
 namespace active_learning {
 
-    bool cached_teacher::belong_query(const std::string &word) {
+    bool cached_teacher::membership_query(const std::string &word) {
         if (query_cache_.contains(word)) {
             return query_cache_[word];
         }

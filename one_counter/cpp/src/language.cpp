@@ -11,7 +11,7 @@ namespace active_learning {
      * @param alphabet The reference target language alphabet
      * @return The counter value of word
      */
-    int get_cv(const std::string &word, alphabet_t &alphabet) {
+    int get_cv(const std::string &word, visibly_alphabet_t &alphabet) {
 
         int res = 0;
         for (char c : word) {
@@ -33,7 +33,7 @@ namespace active_learning {
      * @param alphabet The reference target language alphabet
      * @return true if the words are O_equivalent, false otherwise.
      */
-    bool is_O_equivalent(const std::string &word1, const std::string &word2, RST &rst, teacher &teacher, alphabet_t &alphabet) {
+    bool is_O_equivalent(const std::string &word1, const std::string &word2, RST &rst, teacher &teacher, visibly_alphabet_t &alphabet) {
         if (word1 == word2)
             return true;
 
@@ -56,7 +56,7 @@ namespace active_learning {
      * @param alphabet The reference target language alphabet
      * @return The set of all words that are O_equivalent to word
      */
-    std::set<std::string> get_congruence_set(const std::string &word, RST &rst, teacher &teacher, alphabet_t alphabet) {
+    std::set<std::string> get_congruence_set(const std::string &word, RST &rst, teacher &teacher, visibly_alphabet_t alphabet) {
         int cv_w = get_cv(word, alphabet);
 
         if (cv_w > static_cast<int>(rst.size())) {
@@ -98,6 +98,16 @@ namespace active_learning {
      * @param alphabet The reference alphabet
      * @return true if the word can be formed using the alphabet, false otherwise.
      */
+    bool is_from_alphabet(const std::string &word, const visibly_alphabet_t &alphabet) {
+        for (const char &c : word) {
+            if (!alphabet.contains(c)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     bool is_from_alphabet(const std::string &word, const alphabet_t &alphabet) {
         for (const char &c : word) {
             if (!alphabet.contains(c)) {

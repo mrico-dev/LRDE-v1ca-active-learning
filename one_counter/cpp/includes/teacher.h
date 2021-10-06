@@ -4,10 +4,6 @@
 #include <optional>
 #include <map>
 
-namespace active_learning {
-    class V1CA;
-}
-
 #include "dataframe.h"
 #include "V1CA.h"
 
@@ -16,7 +12,7 @@ namespace active_learning {
     class teacher {
 
     public:
-        virtual bool belong_query(const std::string &word) = 0;
+        virtual bool membership_query(const std::string &word) = 0;
 
         virtual std::optional<std::string>
         partial_equivalence_query(V1CA &behaviour_graph, const std::string &path) = 0;
@@ -33,7 +29,7 @@ namespace active_learning {
 
     public:
         std::string sum_up_msg() const override;
-        bool belong_query(const std::string &word) override;
+        bool membership_query(const std::string &word) override;
 
     private:
         std::map<std::string, bool> query_cache_;

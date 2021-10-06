@@ -9,7 +9,7 @@ namespace active_learning {
     }
 
     semi_manual_teacher::semi_manual_teacher(const std::function<bool(const std::string &)> &checkFunc,
-                                             alphabet_t &alphabet) {
+                                             visibly_alphabet_t &alphabet) {
         alphabet_ = alphabet;
         check_func = checkFunc;
     }

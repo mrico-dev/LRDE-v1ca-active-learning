@@ -6,7 +6,7 @@
 
 namespace active_learning {
 
-    V1CA_learner::V1CA_learner(teacher &teacher, alphabet_t &alphabet) : teacher_(teacher), alphabet_(alphabet) {}
+    V1CA_learner::V1CA_learner(teacher &teacher, visibly_alphabet_t &alphabet) : teacher_(teacher), alphabet_(alphabet) {}
 
     /**
      * Make the RST consistent

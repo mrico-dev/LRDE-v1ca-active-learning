@@ -4,8 +4,8 @@
 #include <boost/graph/graphviz.hpp>
 #include <boost/graph/adjacency_list.hpp>
 
-#include "V1CA_builder.h"
 #include "V1CA.h"
+#include "dot_writers.h"
 
 namespace active_learning {
 
@@ -26,7 +26,8 @@ namespace active_learning {
                     if (graph[*vj.first].name == dest_name) {
                         auto new_edge_index = boost::add_edge(*vi.first, *vj.first, graph);
                         if (!new_edge_index.second)
-                            throw std::runtime_error("link_by_name(): Could not create new edge. Boost won't allow it.");
+                            throw std::runtime_error(
+                                    "link_by_name(): Could not create new edge. Boost won't allow it.");
                         graph[new_edge_index.first].symbol = symbol;
                         return;
                     }
@@ -38,10 +39,6 @@ namespace active_learning {
                 "link_by_name(): Could not find states with names '" + src_name + "' and '" + dest_name + "'.");
     }
 
-    /**
-     * Class getter
-     * @return The mutable adjency_list (graph_t) object
-     */
     V1CA::graph_t &V1CA::get_mutable_graph() {
         return graph;
     }
@@ -113,7 +110,7 @@ namespace active_learning {
      * @return true if states are isomorphic, false otherwise.
      */
     bool V1CA::is_state_isomorphic(V1CA &other, vertex_descriptor_t state1, vertex_descriptor_t state2,
-            label_map_t &label_map) {
+                                   label_map_t &label_map) {
 
         auto queue1 = std::queue<vertex_descriptor_t>();
         auto queue2 = std::queue<vertex_descriptor_t>();
@@ -208,7 +205,7 @@ namespace active_learning {
      * Recursive implementation of is_isomorphic_to
      */
     bool V1CA::is_isomorphic_to_(V1CA &other, states_t &states1, states_t &states2, couples_t &res,
-             label_map_t &label_map) {
+                                 label_map_t &label_map) {
         if (states1.empty() and states2.empty()) {
             return true;
         }
@@ -221,13 +218,15 @@ namespace active_learning {
                     // Let's remove the two states from the list (by copy because recursion) and look for other couples
                     auto new_states1 = states_t(states1);
                     auto new_states2 = states_t(states2);
-                    new_states1.erase(std::remove(new_states1.begin(), new_states1.end(), state_index1), new_states1.end());
-                    new_states2.erase(std::remove(new_states2.begin(), new_states2.end(), state_index2), new_states2.end());
+                    new_states1.erase(std::remove(new_states1.begin(), new_states1.end(), state_index1),
+                                      new_states1.end());
+                    new_states2.erase(std::remove(new_states2.begin(), new_states2.end(), state_index2),
+                                      new_states2.end());
 
                     auto isomorphism_found = is_isomorphic_to_(other, new_states1, new_states2, res, label_map_cp);
                     if (isomorphism_found) {
                         res.emplace_back(graph[state_index1].name,
-                                other.get_mutable_graph()[state_index2].name);
+                                         other.get_mutable_graph()[state_index2].name);
                     }
 
                     // We return either way, because this is the only way to fin isomorphism (no need to keep looking)
@@ -285,7 +284,7 @@ namespace active_learning {
     /**
      * Export the V1CA as a png and .dot file.
      * This function requires to be on linux and have dot installed to get the .png file
-     * @param path The path to the V1CA png and dot file, without the extenstion
+     * @param path The path to the V1CA png and dot file, without the extension
      */
     void V1CA::display(const std::string &path) {
 
@@ -294,8 +293,8 @@ namespace active_learning {
         std::ofstream file;
         file.open(full_path);
         boost::write_graphviz(file, graph,
-                vertex_writer<V1CA>(*this),
-                edge_writer<V1CA, alphabet_t>(*this, *alphabet_));
+                              vertex_writer<V1CA>(*this),
+                              edge_writer<V1CA, visibly_alphabet_t>(*this, *alphabet_));
 
         // Creating png file
         // Hoping that you are on linux and have dot installed
@@ -311,9 +310,9 @@ namespace active_learning {
      * @param edges The names of source and targets of edges
      */
     V1CA::V1CA(std::vector<V1CA_vertex> &states, std::vector<V1CA_vertex> &initial_states,
-               std::vector<V1CA_vertex> &final_states, const alphabet_t &al,
+               std::vector<V1CA_vertex> &final_states, const visibly_alphabet_t &al,
                std::vector<std::tuple<V1CA_vertex, V1CA_vertex, char>> &edges) {
-        alphabet_ = std::make_shared<alphabet_t>(al);
+        alphabet_ = std::make_shared<visibly_alphabet_t>(al);
         // Adding initial states
         for (auto &e : initial_states) {
             this->init_states_.insert(e.name);
@@ -337,7 +336,7 @@ namespace active_learning {
      * Creates an empty V1CA
      */
     V1CA::V1CA() {
-        alphabet_ = std::make_shared<alphabet_t>();
+        alphabet_ = std::make_shared<visibly_alphabet_t>();
     }
 
     /**
@@ -444,7 +443,7 @@ namespace active_learning {
      * @param other The other V1CA.
      * @return true if it is a subset, false otherwise.
      */
-    bool V1CA::is_subset_of(V1CA& other) {
+    bool V1CA::is_subset_of(V1CA &other) {
         auto other_complement = other.complement();
         return inter_with(other_complement).empty();
     }
@@ -472,11 +471,11 @@ namespace active_learning {
      * Tell whether the language of a V1CA is empty, i.e if the V1CA cannot accept any word.
      * @return true if empty, false otherwise.
      */
-    bool V1CA::empty(){
+    bool V1CA::empty() {
         // Doing a recursive traversal and checking whether there is an accessible final state
         std::set<V1CA::vertex_descriptor_t> visited;
         // There need to be only one starting state though
-        auto init_state = V1CA_builder::get_vertex_by_name(*this, *init_states_.begin());
+        auto init_state = get_vertex_by_name(*this, *init_states_.begin());
         return empty_(visited, init_state);
     }
 
@@ -484,10 +483,10 @@ namespace active_learning {
      * Recursive function for inter_with()
      */
     void inter_with_(V1CA &automaton1, V1CA &automaton2,
-                    std::set<V1CA::vertex_descriptor_t> &visited1,
-                    std::set<V1CA::vertex_descriptor_t> &visited2,
-                    V1CA::vertex_descriptor_t curr1, V1CA::vertex_descriptor_t curr2,
-                    V1CA &res, V1CA::vertex_descriptor_t res_curr) {
+                     std::set<V1CA::vertex_descriptor_t> &visited1,
+                     std::set<V1CA::vertex_descriptor_t> &visited2,
+                     V1CA::vertex_descriptor_t curr1, V1CA::vertex_descriptor_t curr2,
+                     V1CA &res, V1CA::vertex_descriptor_t res_curr) {
         if (visited1.contains(curr1) or visited2.contains(curr2))
             return;
         visited1.insert(curr1);
@@ -503,7 +502,8 @@ namespace active_learning {
             auto contains = false;
             auto symbol = '\0';
             V1CA::vertex_descriptor_t dest2 = 0;
-            for (auto edges_it2 = boost::out_edges(curr1, graph1); edges_it2.first != edges_it2.second and not contains; ++edges_it2.first) {
+            for (auto edges_it2 = boost::out_edges(curr1, graph1);
+                 edges_it2.first != edges_it2.second and not contains; ++edges_it2.first) {
                 contains = graph1[*edges_it1.first].symbol == graph2[*edges_it2.first].symbol;
                 symbol = graph1[*edges_it1.first].symbol;
                 dest2 = boost::target(*edges_it2.first, graph2);
@@ -542,8 +542,8 @@ namespace active_learning {
         std::set<V1CA::vertex_descriptor_t> visited_other;
 
         // Getting init state
-        auto init_state1 = V1CA_builder::get_vertex_by_name(automaton1, *automaton1.init_states_.begin());
-        auto init_state2 = V1CA_builder::get_vertex_by_name(automaton2, *automaton2.init_states_.begin());
+        auto init_state1 = V1CA::get_vertex_by_name(automaton1, *automaton1.init_states_.begin());
+        auto init_state2 = V1CA::get_vertex_by_name(automaton2, *automaton2.init_states_.begin());
 
         inter_with_(automaton1, automaton2, visited, visited_other, init_state1, init_state2, res, new_v);
 
@@ -580,4 +580,22 @@ namespace active_learning {
      * @param symbol the symbol of the transition
      */
     V1CA_edge::V1CA_edge(char symbol) : symbol(symbol) {}
+
+    /**
+     * Get the vertex_descriptor of a state using its name
+     * @param automaton The V1CA
+     * @param name The name of the state
+     * @return The state as a vertex_descriptor
+     */
+    V1CA::vertex_descriptor_t V1CA::get_vertex_by_name(V1CA &automaton, const std::string &name) {
+        auto &graph = automaton.get_mutable_graph();
+        auto v_its = boost::vertices(graph);
+        for (; v_its.first != v_its.second; ++v_its.first) {
+            if (graph[*v_its.first].name == name)
+                return *v_its.first;
+        }
+
+        throw std::invalid_argument("get_vertex_by_name(): Could not find vertex");
+
+    }
 }

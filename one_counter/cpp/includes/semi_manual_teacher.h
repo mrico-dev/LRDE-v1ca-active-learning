@@ -9,10 +9,9 @@ namespace active_learning {
         bool belong_query_(const std::string &word) override;
 
     public:
-        semi_manual_teacher(const std::function<bool(const std::string &)> &checkFunc, alphabet_t &alphabet);
+        semi_manual_teacher(const std::function<bool(const std::string &)> &checkFunc, visibly_alphabet_t &alphabet);
 
     private:
-
         std::function<bool(const std::string &)> check_func;
     };
 

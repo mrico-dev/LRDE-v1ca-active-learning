@@ -37,7 +37,7 @@ namespace active_learning {
         auto &row = *(data_.end() - 1);
         auto &label = *(row_labels_.end() - 1);
         for (size_t i = 0; i < col_labels_.size(); ++i) {
-            row[i] = teacher.belong_query(label + col_labels_[i]);
+            row[i] = teacher.membership_query(label + col_labels_[i]);
         }
     }
 
@@ -52,7 +52,7 @@ namespace active_learning {
         for (size_t i = 0; i < row_labels_.size(); ++i) {
             auto &row = data_[i];
             auto &label = row_labels_[i];
-            *(row.end() - 1) = teacher.belong_query(label + name);
+            *(row.end() - 1) = teacher.membership_query(label + name);
         }
     }
 
@@ -320,7 +320,7 @@ namespace active_learning {
      * @param teacher The teacher used for the membership query
      * @param alphabet The target language alphabet
      */
-    void RST::add_counter_example(const std::string &ce, teacher &teacher, alphabet_t &alphabet) {
+    void RST::add_counter_example(const std::string &ce, teacher &teacher, visibly_alphabet_t &alphabet) {
         for (const auto &word : get_all_prefixes(ce)) {
 
             int cv = get_cv(word, alphabet);

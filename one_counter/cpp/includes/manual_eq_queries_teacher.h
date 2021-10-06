@@ -51,7 +51,7 @@ namespace active_learning {
         }
 
     protected:
-        alphabet_t alphabet_;
+        visibly_alphabet_t alphabet_;
     };
 }
 

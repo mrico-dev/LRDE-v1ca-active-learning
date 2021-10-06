@@ -8,7 +8,7 @@ namespace active_learning {
     public:
 
         automatic_teacher(std::function<bool(const std::string &)> checkFunc, V1CA &behaviourRef, V1CA &automatonRef,
-                          alphabet_t alphabet);
+                          visibly_alphabet_t alphabet);
 
         std::optional<std::string> partial_equivalence_query(V1CA &behaviour_graph, const std::string &path) override;
 
@@ -24,7 +24,7 @@ namespace active_learning {
         std::function<bool(const std::string &)> check_func_;
         V1CA& behaviour_ref_;
         V1CA& automaton_ref_;
-        alphabet_t alphabet_;
+        visibly_alphabet_t alphabet_;
     };
 
 }

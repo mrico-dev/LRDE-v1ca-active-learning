@@ -1,4 +1,5 @@
 #include <iostream>
+
 #include "V1CA_builder.h"
 
 namespace active_learning {
@@ -10,7 +11,7 @@ namespace active_learning {
      * @param teacher The teacher that may be used for membership queries
      * @return The corresponding behaviour graph as a V1CA object
      */
-    V1CA V1CA_builder::build_behaviour_graph_from_RST(RST rst, alphabet_t &alphabet, teacher &teacher) {
+    V1CA V1CA_builder::build_behaviour_graph_from_RST(RST rst, visibly_alphabet_t &alphabet, teacher &teacher) {
         // Removing duplicate rows
         RST no_dup_rst = rst.remove_duplicate_rows();
 
@@ -52,7 +53,7 @@ namespace active_learning {
      * @return A set of edges deduced from the RST
      */
     V1CA_builder::edges_t
-    V1CA_builder::get_edges_from_rst(RST &no_dup_rst, alphabet_t &alphabet, std::vector<V1CA_vertex> &states,
+    V1CA_builder::get_edges_from_rst(RST &no_dup_rst, visibly_alphabet_t &alphabet, std::vector<V1CA_vertex> &states,
                                      teacher &teacher) {
         edges_t res;
         for (auto &st : states) {
@@ -117,30 +118,13 @@ namespace active_learning {
     }
 
     /**
-     * Get the vertex_descriptor of a state using its name
-     * @param automaton The V1CA
-     * @param name The name of the state
-     * @return The state as a vertex_descriptor
-     */
-    V1CA::vertex_descriptor_t V1CA_builder::get_vertex_by_name(V1CA& automaton, const std::string &name) {
-        auto &graph = automaton.get_mutable_graph();
-        auto v_its = boost::vertices(graph);
-        for (; v_its.first != v_its.second; ++v_its.first) {
-            if (graph[*v_its.first].name == name)
-                return *v_its.first;
-        }
-
-        throw std::invalid_argument("get_vertex_by_name(): Could not find vertex");
-    }
-
-    /**
      * Get a subgraph of the given V1CA containing all states of levels from level_down to level_top (included)
      * @param automaton The original V1CA
      * @param level_down The bottom level
      * @param level_top The top level
      * @return A copy of the V1CA only containing states from level_down to level_top
      */
-    V1CA V1CA_builder::get_subgraph(V1CA &automaton, unsigned int level_down, unsigned int level_top) {
+    active_learning::V1CA V1CA_builder::get_subgraph(V1CA &automaton, unsigned int level_down, unsigned int level_top) {
         auto res = V1CA(automaton);
         auto &graph = res.get_mutable_graph();
 
@@ -186,7 +170,7 @@ namespace active_learning {
      * @param verbose To be set true for debug printing
      * @return The given V1CA
      */
-    V1CA &V1CA_builder::behaviour_graph_to_V1CA(V1CA &automaton, RST &rst_no_dup, alphabet_t &alphabet,
+    V1CA &V1CA_builder::behaviour_graph_to_V1CA(V1CA &automaton, RST &rst_no_dup, visibly_alphabet_t &alphabet,
                                                 bool verbose) {
         if (rst_no_dup.size() < 3) {
             if (verbose)
@@ -270,15 +254,15 @@ namespace active_learning {
      * @return A list of the new edges that were created
      */
     V1CA_builder::looped_edges_t
-    V1CA_builder::link_period(V1CA &automaton, V1CA_builder::couples_t &couples, alphabet_t &alphabet) {
+    V1CA_builder::link_period(V1CA &automaton, V1CA_builder::couples_t &couples, visibly_alphabet_t &alphabet) {
         automaton.set_periodic(true);
 
         looped_edges_t new_edges;
         auto &graph = automaton.get_mutable_graph();
 
         for (const auto &couple : couples) {
-            auto state1 = get_vertex_by_name(automaton, couple.first);
-            auto state2 = get_vertex_by_name(automaton, couple.second);
+            auto state1 = V1CA::get_vertex_by_name(automaton, couple.first);
+            auto state2 = V1CA::get_vertex_by_name(automaton, couple.second);
 
             for (auto &edge : get_edges_from_state(automaton, state1)) {
                 auto edge_prop = graph[edge];

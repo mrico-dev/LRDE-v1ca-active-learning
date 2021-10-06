@@ -15,13 +15,13 @@ namespace active_learning {
         bool make_rst_closed(RST &rst);
 
     public:
-        V1CA_learner(teacher &teacher, alphabet_t &alphabet);
+        V1CA_learner(teacher &teacher, visibly_alphabet_t &alphabet);
 
         V1CA learn_V1CA(bool verbose = false);
 
     private:
         teacher &teacher_;
-        alphabet_t &alphabet_;
+        visibly_alphabet_t &alphabet_;
     };
 
 }
