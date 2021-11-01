@@ -4,7 +4,7 @@
 
 namespace active_learning {
 
-    bool semi_manual_teacher::belong_query_(const std::string &word) {
+    bool semi_manual_teacher::membership_query_(const std::string &word) {
         return check_func(word);
     }
 

@@ -60,7 +60,7 @@ namespace active_learning {
      * @return true if the state is the initial state, false otherwise
      */
     bool V1CA::is_init(const V1CA_vertex &state) {
-        return init_states_.contains(state.name);
+        return init_state_ == state.name;
     }
 
     /**
@@ -98,173 +98,6 @@ namespace active_learning {
     }
 
     /**
-     * Tell whether two states of two V1CA are isomorphic.
-     * To do so, we check if they are locally isomorphic, and then if all their neighbors
-     * are recursively isomorphic as well.
-     * A label_map is kept to identify states that were already visited.
-     * @param other The other V1CA that contains state2
-     * @param state1 The first state of the V1CA
-     * @param state2 The other state of the other V1CA
-     * @param label_map The map to keep track of the visited states, and give them ids to make sure the isomophism
-     * check is not locally biases
-     * @return true if states are isomorphic, false otherwise.
-     */
-    bool V1CA::is_state_isomorphic(V1CA &other, vertex_descriptor_t state1, vertex_descriptor_t state2,
-                                   label_map_t &label_map) {
-
-        auto queue1 = std::queue<vertex_descriptor_t>();
-        auto queue2 = std::queue<vertex_descriptor_t>();
-        auto visited = std::set<vertex_descriptor_t>();
-
-        // Checking if both states are final, or not, or initial, or not
-        // Using xor to check if values are different
-        if ((is_final(graph[state1]) ^ other.is_final(other.get_mutable_graph()[state2]))
-            or (is_init(graph[state1]) ^ other.is_init(other.get_mutable_graph()[state2]))) {
-            return false;
-        }
-
-        while (!queue1.empty()) {
-            auto q1 = queue1.front();
-            auto q2 = queue2.front();
-            queue1.pop();
-            queue2.pop();
-
-            if (visited.contains(q1))
-                continue;
-            visited.insert(q1);
-
-            // FIXME we could possibly factorize this code
-            for (auto symbol : *alphabet_) {
-                // Checking if same next
-                auto next1 = get_next_index(q1, symbol.first);
-                auto next2 = other.get_next_index(q2, symbol.first);
-
-                if (next1.has_value() ^ next2.has_value())
-                    return false;
-                if (is_init(graph[*next1]) ^ other.is_init(other.graph[*next2]))
-                    return false;
-                if (is_final(graph[*next1]) ^ other.is_final(other.graph[*next2]))
-                    return false;
-
-                // Checking label
-                if (!label_map.contains(*next1)) {
-                    if (label_map.contains(*next2))
-                        return false;
-
-                    // Arbitrarily choosing label_map size as label (since we know it was not used before)
-                    auto new_label = label_map.size();
-                    label_map.insert({*next1, new_label});
-                    label_map.insert({*next2, new_label});
-                } else {
-                    if (label_map[*next1] != label_map[*next2])
-                        return false;
-                }
-
-                // Planning to visit next state
-                if (!visited.contains(*next1)) {
-                    queue1.push(*next1);
-                    queue2.push(*next2);
-                }
-
-                // Now checking prev
-                auto prev1 = get_prev_index(q1, symbol.first);
-                auto prev2 = other.get_prev_index(q2, symbol.first);
-
-                if (prev1.has_value() ^ prev1.has_value())
-                    return false;
-                if (is_init(graph[*prev1]) ^ other.is_init(other.graph[*prev2]))
-                    return false;
-                if (is_final(graph[*prev1]) ^ other.is_final(other.graph[*prev2]))
-                    return false;
-
-                // Checking label
-                if (!label_map.contains(*prev1)) {
-                    if (label_map.contains(*prev2))
-                        return false;
-
-                    auto new_label = label_map.size();
-                    label_map.insert({*prev1, new_label});
-                    label_map.insert({*prev2, new_label});
-                } else {
-                    if (label_map[*prev1] != label_map[*prev2])
-                        return false;
-                }
-
-                // Planning to visit prev
-                if (!visited.contains(*prev1)) {
-                    queue1.push(*prev1);
-                    queue2.push(*prev2);
-                }
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Recursive implementation of is_isomorphic_to
-     */
-    bool V1CA::is_isomorphic_to_(V1CA &other, states_t &states1, states_t &states2, couples_t &res,
-                                 label_map_t &label_map) {
-        if (states1.empty() and states2.empty()) {
-            return true;
-        }
-
-        for (auto state_index1 : states1) {
-            for (auto state_index2 : states2) {
-
-                auto label_map_cp = label_map_t(label_map);
-                if (is_state_isomorphic(other, state_index1, state_index2, label_map_cp)) {
-                    // Let's remove the two states from the list (by copy because recursion) and look for other couples
-                    auto new_states1 = states_t(states1);
-                    auto new_states2 = states_t(states2);
-                    new_states1.erase(std::remove(new_states1.begin(), new_states1.end(), state_index1),
-                                      new_states1.end());
-                    new_states2.erase(std::remove(new_states2.begin(), new_states2.end(), state_index2),
-                                      new_states2.end());
-
-                    auto isomorphism_found = is_isomorphic_to_(other, new_states1, new_states2, res, label_map_cp);
-                    if (isomorphism_found) {
-                        res.emplace_back(graph[state_index1].name,
-                                         other.get_mutable_graph()[state_index2].name);
-                    }
-
-                    // We return either way, because this is the only way to fin isomorphism (no need to keep looking)
-                    return isomorphism_found;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Tell whether two V1CA are isomorphic, and find a couples of equivalent states.
-     * @param other The other V1CA
-     * @param from_level1 The level where reference states are taken from in the first V1CA
-     * @param from_level2 The level where reference states are taken from in the other V1CA
-     * @return Couples of matching equivalent states if the V1CAs are equivalent, std::nullopt if not.
-     */
-    std::optional<V1CA::couples_t>
-    V1CA::is_isomorphic_to(V1CA &other, unsigned int from_level1, unsigned from_level2) {
-
-        states_t starting_states_1 = get_all_states_of_level(from_level1);
-        states_t starting_states_2 = other.get_all_states_of_level(from_level2);
-
-        if (starting_states_1.size() != starting_states_2.size()) {
-            return std::nullopt;
-        }
-
-        couples_t res;
-        label_map_t labels;
-        if (is_isomorphic_to_(other, starting_states_1, starting_states_2, res, labels)) {
-            return res;
-        }
-
-        return std::nullopt;
-    }
-
-    /**
      * Extract all states of a specific level (counter value) of a V1CA.
      * @param level The level of the states
      * @return A list of the states
@@ -286,15 +119,15 @@ namespace active_learning {
      * This function requires to be on linux and have dot installed to get the .png file
      * @param path The path to the V1CA png and dot file, without the extension
      */
-    void V1CA::display(const std::string &path) {
+    void V1CA::display(const std::string &path) const {
 
         // Writing dot file
         std::string full_path = path + ".dot";
         std::ofstream file;
         file.open(full_path);
         boost::write_graphviz(file, graph,
-                              vertex_writer<V1CA>(*this),
-                              edge_writer<V1CA, visibly_alphabet_t>(*this, *alphabet_));
+                              vertex_writer((displayable &) *this),
+                              edge_writer((displayable &) *this, alphabet_));
 
         // Creating png file
         // Hoping that you are on linux and have dot installed
@@ -309,17 +142,15 @@ namespace active_learning {
      * @param al The reference target language alphabet
      * @param edges The names of source and targets of edges
      */
-    V1CA::V1CA(std::vector<V1CA_vertex> &states, std::vector<V1CA_vertex> &initial_states,
-               std::vector<V1CA_vertex> &final_states, const visibly_alphabet_t &al,
-               std::vector<std::tuple<V1CA_vertex, V1CA_vertex, char>> &edges) {
-        alphabet_ = std::make_shared<visibly_alphabet_t>(al);
+    V1CA::V1CA(std::vector<V1CA_vertex> &states, std::string &initial_state,
+               std::vector<std::string> &final_states, visibly_alphabet_t &al,
+               std::vector<std::tuple<std::string, std::string, char>> &edges) :
+            one_counter_automaton(al, displayable_type::V1CA) {
         // Adding initial states
-        for (auto &e : initial_states) {
-            this->init_states_.insert(e.name);
-        }
+        this->init_state_ = initial_state;
         // Adding final states
         for (auto &e : final_states) {
-            this->final_states_.insert(e.name);
+            this->final_states_.insert(e);
         }
         // Adding states to graph
         for (auto &v : states) {
@@ -328,15 +159,8 @@ namespace active_learning {
         }
         // Adding edges to graph
         for (auto &e : edges) {
-            link_by_name(std::get<0>(e).name, std::get<1>(e).name, std::get<2>(e));
+            link_by_name(std::get<0>(e), std::get<1>(e), std::get<2>(e));
         }
-    }
-
-    /**
-     * Creates an empty V1CA
-     */
-    V1CA::V1CA() {
-        alphabet_ = std::make_shared<visibly_alphabet_t>();
     }
 
     /**
@@ -475,7 +299,7 @@ namespace active_learning {
         // Doing a recursive traversal and checking whether there is an accessible final state
         std::set<V1CA::vertex_descriptor_t> visited;
         // There need to be only one starting state though
-        auto init_state = get_vertex_by_name(*this, *init_states_.begin());
+        auto init_state = get_vertex_by_name(*this, init_state_);
         return empty_(visited, init_state);
     }
 
@@ -532,8 +356,8 @@ namespace active_learning {
         auto &automaton1 = *this;
         auto &automaton2 = other;
         // Initializing result v1ca
-        V1CA res;
-        auto res_graph = res.get_mutable_graph();
+        auto res = V1CA(dynamic_cast<visibly_alphabet_t&>(alphabet_));
+        auto &res_graph = res.get_mutable_graph();
         auto init_v = V1CA_vertex("", 0);
         auto new_v = boost::add_vertex(init_v, res_graph);
 
@@ -542,8 +366,8 @@ namespace active_learning {
         std::set<V1CA::vertex_descriptor_t> visited_other;
 
         // Getting init state
-        auto init_state1 = V1CA::get_vertex_by_name(automaton1, *automaton1.init_states_.begin());
-        auto init_state2 = V1CA::get_vertex_by_name(automaton2, *automaton2.init_states_.begin());
+        auto init_state1 = V1CA::get_vertex_by_name(automaton1, automaton1.init_state_);
+        auto init_state2 = V1CA::get_vertex_by_name(automaton2, automaton2.init_state_);
 
         inter_with_(automaton1, automaton2, visited, visited_other, init_state1, init_state2, res, new_v);
 
@@ -598,4 +422,56 @@ namespace active_learning {
         throw std::invalid_argument("get_vertex_by_name(): Could not find vertex");
 
     }
+
+    /**
+     * Color the V1CA by putting conditions on specific edges
+     * @param automaton The given V1CA
+     * @param new_edges Edges that were added when looping on the periodic structure
+     */
+    void V1CA::color_edges(V1CA::looped_edges_t &new_edges) {
+        // Coloring init (others)
+        for (auto edge_it = boost::edges(graph); edge_it.first != edge_it.second; ++edge_it.first) {
+            get_mutable_init_edge_color().insert(make_pair_comp((*edge_it.first).m_source, (*edge_it.first).m_target));
+        }
+
+        // Coloring loop in no cond edges
+        for (auto &edge : new_edges.first) {
+            get_mutable_loop_in_no_cond_color().insert(make_pair_comp(edge.m_source, edge.m_target));
+            get_mutable_init_edge_color().erase(make_pair_comp(edge.m_source, edge.m_target));
+        }
+
+        // Coloring loop in with cond edges
+        for (auto &edge : new_edges.second) {
+            get_mutable_loop_in_with_cond_color().insert(make_pair_comp(edge.m_source, edge.m_target));
+            get_mutable_init_edge_color().erase(make_pair_comp(edge.m_source, edge.m_target));
+        }
+
+        // Coloring loop out edges
+        for (auto &loop_in_edge_with_cond : get_mutable_loop_in_with_cond_color()) {
+            for (auto &other_edge_from_same_source : get_transitions_from_state(loop_in_edge_with_cond.first)) {
+                if ((loop_in_edge_with_cond.first != other_edge_from_same_source.m_target
+                     or loop_in_edge_with_cond.second != other_edge_from_same_source.m_source)
+                    and get_edge(loop_in_edge_with_cond.first, loop_in_edge_with_cond.second).symbol ==
+                        graph[other_edge_from_same_source].symbol) {
+                    get_mutable_loop_out_color().insert(
+                            make_pair_comp(other_edge_from_same_source.m_source, other_edge_from_same_source.m_target));
+                    get_mutable_init_edge_color().erase(
+                            make_pair_comp(other_edge_from_same_source.m_source, other_edge_from_same_source.m_target));
+                }
+            }
+        }
+
+        set_colored(true);
+    }
+
+    std::vector<V1CA::edge_descriptor_t> V1CA::get_transitions_from_state(V1CA::vertex_descriptor_t from) {
+        std::vector<edge_descriptor_t> res;
+        for (auto vp = boost::out_edges(from, graph); vp.first != vp.second; ++vp.first) {
+            res.emplace_back(*vp.first);
+        }
+
+        return res;
+    }
+
+    V1CA::V1CA(visibly_alphabet_t &alphabet) : one_counter_automaton(alphabet, displayable_type::V1CA) {}
 }

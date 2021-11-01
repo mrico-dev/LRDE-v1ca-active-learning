@@ -1,46 +1,61 @@
 #include "automatic_teacher.h"
 #include "language.h"
+#include "behaviour_graph.h"
 
 #include <utility>
 
-std::optional<std::string>
-active_learning::automatic_teacher::partial_equivalence_query(active_learning::V1CA &behaviour_graph,
-                                                              const std::string &path) {
-    (void) path;
-    if (behaviour_ref_.is_subset_of(behaviour_graph))
-        return std::nullopt;
+namespace active_learning {
 
-    return find_counter_example(behaviour_graph);
-}
+    std::optional<std::string>
+    automatic_teacher::partial_equivalence_query(behaviour_graph &behaviour_graph,
+                                                 const std::string &path) {
+        (void) path; // unused
 
-std::optional<std::string>
-active_learning::automatic_teacher::equivalence_query(active_learning::V1CA &automaton, const std::string &path) {
-    (void) path;
-    if (automaton.is_equivalent_to(automaton_ref_))
-        return std::nullopt;
+        if (behaviour_graph.is_isomorphic_to(behaviour_ref_, 0, 10000, alphabet_))
+            return std::nullopt;
 
-    return find_counter_example(automaton);
-}
-
-bool active_learning::automatic_teacher::belong_query_(const std::string &word) {
-    return check_func_(word);
-}
-
-std::string active_learning::automatic_teacher::find_counter_example(active_learning::V1CA &automaton) {
-    // How about trying to get the counter example from empty() ??
-    // Not sure it would perfectly work tho
-    (void) automaton;
-    std::string ce;
-    // keep the following line
-    if (get_cv(ce, alphabet_)) {
-        throw std::runtime_error("Automatic teacher found a counter example whose cv is not 0.");
+        return "";  // TODO
     }
-    return std::string();
+
+    std::optional<std::string>
+    automatic_teacher::equivalence_query(one_counter_automaton &automaton, const std::string &path) {
+        (void) path;
+        auto &v1ca = oca_to_v1ca(automaton);
+
+        if (v1ca.is_equivalent_to(automaton_ref_))
+            return std::nullopt;
+
+        return find_counter_example(v1ca);
+    }
+
+    bool active_learning::automatic_teacher::membership_query_(const std::string &word) {
+        return check_func_(word);
+    }
+
+    std::string automatic_teacher::find_counter_example(V1CA &automaton) {
+        // How about trying to get the counter example from empty() ??
+        // Not sure it would perfectly work tho
+        (void) automaton;
+        std::string ce;
+        // keep the following line
+        if (alphabet_.get_cv(ce)) {
+            throw std::runtime_error("Automatic teacher found a counter example whose cv is not 0.");
+        }
+        return std::string();
+    }
+
+    automatic_teacher::automatic_teacher(std::function<bool(const std::string &)> checkFunc,
+                                         behaviour_graph &behaviourRef,
+                                         V1CA &automatonRef,
+                                         visibly_alphabet_t alphabet) : check_func_(
+            std::move(checkFunc)), behaviour_ref_(behaviourRef), automaton_ref_(automatonRef), alphabet_(
+            std::move(alphabet)) {}
+
+    V1CA &automatic_teacher::oca_to_v1ca(one_counter_automaton &v1ca) {
+        auto *v1ca_ptr = dynamic_cast<V1CA*>(&v1ca);
+        if (!v1ca_ptr)
+            throw std::runtime_error("automatic teacher must be given a V1CA type.");
+        return *v1ca_ptr;
+    }
+
 }
-
-active_learning::automatic_teacher::automatic_teacher(std::function<bool(const std::string &)> checkFunc,
-                                                      active_learning::V1CA &behaviourRef,
-                                                      active_learning::V1CA &automatonRef,
-                                                      active_learning::visibly_alphabet_t alphabet) : check_func_(std::move(
-        checkFunc)), behaviour_ref_(behaviourRef), automaton_ref_(automatonRef), alphabet_(std::move(alphabet)) {}
-

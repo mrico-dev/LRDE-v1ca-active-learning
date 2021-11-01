@@ -9,7 +9,7 @@ namespace active_learning {
             return query_cache_[word];
         }
 
-        auto res = belong_query_(word);
+        auto res = membership_query_(word);
         query_cache_[word] = res;
         return res;
     }

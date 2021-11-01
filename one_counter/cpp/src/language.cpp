@@ -1,25 +1,11 @@
 #include "language.h"
+#include "dataframe.h"
 
 #include <iostream>
 
 namespace active_learning {
 
-    /**
-     * Get the counter value of a word.
-     * The counter value is the sum of all counter value of each symbol of the word
-     * @param word The word whose counter value needs to be processed
-     * @param alphabet The reference target language alphabet
-     * @return The counter value of word
-     */
-    int get_cv(const std::string &word, visibly_alphabet_t &alphabet) {
 
-        int res = 0;
-        for (char c : word) {
-            res += alphabet[c];
-        }
-
-        return res;
-    }
 
     /**
      * Returns whether two words are O_equivalent according to the RST.
@@ -33,12 +19,12 @@ namespace active_learning {
      * @param alphabet The reference target language alphabet
      * @return true if the words are O_equivalent, false otherwise.
      */
-    bool is_O_equivalent(const std::string &word1, const std::string &word2, RST &rst, teacher &teacher, visibly_alphabet_t &alphabet) {
+    bool is_O_equivalent(const std::string &word1, const std::string &word2, RST &rst, word_counter &wc, teacher &teacher) {
         if (word1 == word2)
             return true;
 
-        int cv_w = get_cv(word1, alphabet);
-        if (cv_w != get_cv(word2, alphabet))
+        int cv_w = wc.get_cv(word1);
+        if (cv_w != wc.get_cv(word2))
             return false;
 
         auto rst_copy = RST(rst);
@@ -56,8 +42,8 @@ namespace active_learning {
      * @param alphabet The reference target language alphabet
      * @return The set of all words that are O_equivalent to word
      */
-    std::set<std::string> get_congruence_set(const std::string &word, RST &rst, teacher &teacher, visibly_alphabet_t alphabet) {
-        int cv_w = get_cv(word, alphabet);
+    std::set<std::string> get_congruence_set(const std::string &word, RST &rst, word_counter &wc, teacher &teacher) {
+        int cv_w = wc.get_cv(word);
 
         if (cv_w > static_cast<int>(rst.size())) {
             throw std::runtime_error("get_congruence_set(): given cv is out of bound of RST.");
@@ -66,7 +52,7 @@ namespace active_learning {
         auto res = std::set<std::string>();
         for (auto &table : rst.get_tables()) {
             for (auto &label : table.get_row_labels()) {
-                if (is_O_equivalent(word, label, rst, teacher, alphabet)) {
+                if (is_O_equivalent(word, label, rst, wc, teacher)) {
                     res.insert(label);
                 }
             }
@@ -75,21 +61,6 @@ namespace active_learning {
         return res;
     }
 
-    /**
-     * Returns all prefixes of a word, including the word itself and ""
-     * @param word The word whose prefixes need to be computed
-     * @return The vector of prefixes of the word
-     */
-    std::vector<std::string> get_all_prefixes(const std::string &word) {
-        std::vector<std::string> res({""});
-        std::string pref;
-        for (char c : word) {
-           pref.push_back(c);
-           res.emplace_back(pref);
-        }
-
-        return res;
-    }
 
     /**
      * Tell whether a word can be formed with the symbols of a specified alphabet,
@@ -98,19 +69,9 @@ namespace active_learning {
      * @param alphabet The reference alphabet
      * @return true if the word can be formed using the alphabet, false otherwise.
      */
-    bool is_from_alphabet(const std::string &word, const visibly_alphabet_t &alphabet) {
+    bool is_from_alphabet(const std::string &word, const alphabet &alphabet) {
         for (const char &c : word) {
-            if (!alphabet.contains(c)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    bool is_from_alphabet(const std::string &word, const alphabet_t &alphabet) {
-        for (const char &c : word) {
-            if (!alphabet.contains(c)) {
+            if (!alphabet.symbols().contains(c)) {
                 return false;
             }
         }

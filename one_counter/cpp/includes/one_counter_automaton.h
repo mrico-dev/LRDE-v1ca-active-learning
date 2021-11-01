@@ -1,6 +1,8 @@
 #pragma once
 
 #include <boost/graph/adjacency_list.hpp>
+#include "alphabet.h"
+#include "displayable.h"
 
 namespace active_learning {
 
@@ -23,32 +25,25 @@ namespace active_learning {
         T2 second;
     };
 
-    struct automaton_vertex {
-    };
-
-    struct automaton_edge {
-    };
-
     template<class T1, class T2>
     pair_comp<T1, T2> make_pair_comp(T1 e1, T2 e2) {
         return pair_comp(e1, e2);
     }
 
-    enum class automaton_type {
-        V1CA,
-        R1CA
-    };
 
     // TODO later when everything works
-    class one_counter_automaton {
+    class one_counter_automaton : public displayable {
 
+    protected:
     public:
-        automaton_type get_automaton_type() const;
+        one_counter_automaton(alphabet &alphabet, displayable_type disp_type);
 
     protected:
-        one_counter_automaton() = default;
+        virtual void to_delete_later() {}; // So the class is polymorphic
+
+        alphabet &get_alphabet();
 
     protected:
-        automaton_type automaton_type_;
+        alphabet &alphabet_;
     };
 }

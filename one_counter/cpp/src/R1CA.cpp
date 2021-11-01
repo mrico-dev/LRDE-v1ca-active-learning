@@ -7,7 +7,7 @@
 
 namespace active_learning {
 
-    R1CA_vertex::R1CA_vertex(std::string name) : name(std::move(name)) {}
+    R1CA_vertex::R1CA_vertex(std::string name, int vertex_cv) : name(std::move(name)), cv(vertex_cv) {}
 
     R1CA_vertex::R1CA_vertex() {}
 
@@ -28,7 +28,7 @@ namespace active_learning {
     // TODO optimize with one function to evaluate and one to count (because this one does not break on neg counter)
     std::pair<bool, int> R1CA::evaluate(const std::string &word) {
         // Starting at initial state with counter = 0
-        auto curr_state = find_vertex_by_name(init_state);
+        auto curr_state = find_vertex_by_name(init_state_);
         auto counter = 0;
         auto acceptable = true;
         // Getting from states to states using symbol of the word
@@ -68,7 +68,7 @@ namespace active_learning {
         return alphabet_;
     }
 
-    R1CA::R1CA(alphabet_t &alphabet) : one_counter_automaton(), alphabet_(alphabet) {}
+    R1CA::R1CA(alphabet_t &alphabet) : one_counter_automaton(alphabet, displayable_type::R1CA), alphabet_(alphabet) {}
 
     void R1CA::display(const std::string &path) const {
         // Writing dot file
@@ -76,8 +76,8 @@ namespace active_learning {
         std::ofstream file;
         file.open(full_path);
         boost::write_graphviz(file, graph_,
-                              vertex_writer<R1CA>(*this),
-                              edge_writer<R1CA, alphabet_t>(*this, alphabet_));
+                              vertex_writer((displayable &) *this),
+                              edge_writer((displayable &) *this, alphabet_));
 
         // Creating png file
         // Hoping that you are on linux and have dot installed
@@ -91,4 +91,32 @@ namespace active_learning {
     bool R1CA::is_final(const R1CA_vertex &v) {
         return final_states_.contains(v.name);
     }
+
+    R1CA::R1CA(std::vector<std::string> &states,
+               std::vector<std::tuple<std::string, R1CA_edge, std::string>> edges, const std::string &init_state,
+               const std::unordered_set<std::string> &final_states, alphabet_t &alphabet) : one_counter_automaton(
+            alphabet, displayable_type::R1CA), alphabet_(alphabet) {
+        // Adding initial state
+        init_state_ = init_state;
+        // Adding final states
+        for (auto &e : final_states) {
+            this->final_states_.insert(e);
+        }
+        // Adding states to graph
+        for (auto &v : states) {
+            auto new_v = boost::add_vertex(graph_);
+            graph_[new_v] = R1CA_vertex(v, 0); // TODO false
+        }
+        // Adding edges to graph
+        for (auto &e : edges) {
+            vertex_descriptor_t src = find_vertex_by_name(std::get<0>(e));
+            vertex_descriptor_t dest = find_vertex_by_name(std::get<2>(e));
+            R1CA_edge &prop = std::get<1>(e);
+            auto new_edge = boost::add_edge(src, dest, graph_);
+            if (!new_edge.second)
+                throw std::runtime_error("Could not add edge while creating R1CA, boost won't allow it");
+            graph_[new_edge.first] = prop;
+        }
+    }
+
 }

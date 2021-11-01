@@ -4,10 +4,11 @@
 #include <optional>
 #include <map>
 
-#include "dataframe.h"
-#include "V1CA.h"
+#include "one_counter_automaton.h"
 
 namespace active_learning {
+
+    class behaviour_graph;
 
     class teacher {
 
@@ -15,20 +16,20 @@ namespace active_learning {
         virtual bool membership_query(const std::string &word) = 0;
 
         virtual std::optional<std::string>
-        partial_equivalence_query(V1CA &behaviour_graph, const std::string &path) = 0;
+        partial_equivalence_query(behaviour_graph &behaviour_graph, const std::string &path) = 0;
 
         virtual std::string sum_up_msg() const;
 
-        virtual std::optional<std::string> equivalence_query(V1CA &automaton, const std::string &path) = 0;
+        virtual std::optional<std::string> equivalence_query(one_counter_automaton &automaton, const std::string &path) = 0;
     };
 
     class cached_teacher : public teacher {
 
     protected:
-        virtual bool belong_query_(const std::string &word) = 0;
+        virtual bool membership_query_(const std::string &word) = 0;
 
     public:
-        std::string sum_up_msg() const override;
+        [[nodiscard]] std::string sum_up_msg() const override;
         bool membership_query(const std::string &word) override;
 
     private:

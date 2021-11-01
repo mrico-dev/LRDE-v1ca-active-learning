@@ -3,7 +3,6 @@
 #include "V1CA.h"
 #include "teacher.h"
 #include "dataframe.h"
-#include "V1CA_builder.h"
 
 namespace active_learning {
 

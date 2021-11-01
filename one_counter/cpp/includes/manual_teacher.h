@@ -10,7 +10,7 @@ namespace active_learning {
         manual_teacher(visibly_alphabet_t &alphabet);
 
     protected:
-        bool belong_query_(const std::string &word) override;
+        bool membership_query_(const std::string &word) override;
 
     };
 

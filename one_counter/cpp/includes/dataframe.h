@@ -4,13 +4,6 @@
 #include <string>
 #include <map>
 
-namespace active_learning {
-    class teacher;
-
-    using visibly_alphabet_t = std::map<char, int>;
-}
-
-#include "language.h"
 #include "teacher.h"
 
 namespace active_learning {
@@ -61,6 +54,8 @@ namespace active_learning {
     private:
         void expand_RST(int cv);
 
+        static std::vector<std::string> get_all_prefixes(const std::string &word);
+
     public:
         explicit RST(teacher &teacher);
 
@@ -84,7 +79,8 @@ namespace active_learning {
         void add_col_using_query_if_not_present(const std::string &name, int cv, teacher &teacher,
                                                 const std::string &context);
 
-        void add_counter_example(const std::string &ce, teacher &teacher, visibly_alphabet_t &alphabet);
+
+        void add_counter_example(const std::string &ce, teacher &teacher, word_counter &wc);
 
         bool compare_rows(const std::string &word1, const std::string &word2, int cv) const;
 

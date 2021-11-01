@@ -1,6 +1,7 @@
-#include <iostream>
 #include "V1CA_learner.h"
 #include "dataframe.h"
+#include "behaviour_graph.h"
+#include "language.h"
 
 #include <iostream>
 
@@ -20,16 +21,15 @@ namespace active_learning {
                 const std::string &u = table.get_row_labels()[u_i];
                 for (auto v_i = u_i + 1; v_i < table.get_row_labels().size(); ++v_i) {
                     const std::string &v = table.get_row_labels()[v_i];
-                    if (is_O_equivalent(u, v, rst, teacher_, alphabet_)) {
-                        for (auto &symbol : alphabet_) {
-                            char c = symbol.first;
+                    if (is_O_equivalent(u, v, rst, alphabet_, teacher_)) {
+                        for (auto c : alphabet_.symbols()) {
                             std::string uc = u + c;
                             std::string vc = v + c;
-                            auto cv_uc = get_cv(uc, alphabet_);
+                            auto cv_uc = alphabet_.get_cv(uc);
                             if (cv_uc < 0) {
                                 continue;
                             }
-                            if (!is_O_equivalent(uc, vc, rst, teacher_, alphabet_)) {
+                            if (!is_O_equivalent(uc, vc, rst, alphabet_, teacher_)) {
                                 if (cv_uc > static_cast<int>(rst.size())) {
                                     throw std::runtime_error("make_rst_consistent(): Unexpected cv which is out of bound of rst was encountered.");
                                 }
@@ -62,16 +62,15 @@ namespace active_learning {
         for (size_t i = 0; i < rst.size(); ++i) {
             auto &table = rst.get_tables()[i];
             for (const std::string& u: table.get_row_labels()) {
-                for (auto symbol : alphabet_) {
+                for (auto c : alphabet_.symbols()) {
 
-                    char c = symbol.first;
-                    int val = symbol.second;
+                    int val = alphabet_.get_cv(c);
                     if ((val == -1 and i == 0) or (val == 1 and i == rst.size() - 1)) {
                         continue;
                     }
 
                     std::string uc = u + c;
-                    auto uc_O = get_congruence_set(uc, rst, teacher_, alphabet_);
+                    auto uc_O = get_congruence_set(uc, rst, alphabet_, teacher_);
                     int cv_uc = static_cast<int>(i) + val;
 
                     auto &uc_table = rst.get_tables()[cv_uc];
@@ -113,7 +112,7 @@ namespace active_learning {
     {
         // Initialising rst with "" and "" as only labels for rows and columns
         auto rst = RST(teacher_);
-        auto res = V1CA();
+        std::shared_ptr<V1CA> res = nullptr;
 
         // Looping until V1CA is accepted by teacher
         auto v1ca_correct = false;
@@ -135,16 +134,17 @@ namespace active_learning {
             }
 
             // Removing duplicates inside RST (to avoid state duplication)
-            auto rst_no_dup = rst.remove_duplicate_rows();
+            RST rst_no_dup = rst.remove_duplicate_rows();
             // Creating behaviour graph
-            auto behaviour_graph = V1CA_builder::build_behaviour_graph_from_RST(rst_no_dup, alphabet_, teacher_);
+            auto bg = behaviour_graph(rst_no_dup, alphabet_, teacher_, alphabet_);
+
             // Testing partial equivalence on behaviour graph
-            auto partial_eq = teacher_.partial_equivalence_query(behaviour_graph, "behaviour_graph");
+            auto partial_eq = teacher_.partial_equivalence_query(bg, "behaviour_graph");
             if (!partial_eq) {
                 // Making V1CA by (maybe) finding a periodic subgraph
-                res = V1CA_builder::behaviour_graph_to_V1CA(behaviour_graph, rst_no_dup, alphabet_, verbose);  // inplace
+                res = bg.to_v1ca(rst_no_dup, alphabet_, verbose);
                 // Testing V1CA equivalence
-                auto eq = teacher_.equivalence_query(res, "v1ca");
+                auto eq = teacher_.equivalence_query(*res, "v1ca");
                 if (!eq)
                     v1ca_correct = true;
                 else
@@ -154,7 +154,7 @@ namespace active_learning {
             }
         }
 
-        return res;
+        return *res;
     }
 
 }

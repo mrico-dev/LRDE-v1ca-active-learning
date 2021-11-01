@@ -2,7 +2,7 @@
 
 namespace active_learning {
 
-    bool manual_teacher::belong_query_(const std::string &word) {
+    bool manual_teacher::membership_query_(const std::string &word) {
 
         std::string res;
         while (res != "y" and res != "n") {

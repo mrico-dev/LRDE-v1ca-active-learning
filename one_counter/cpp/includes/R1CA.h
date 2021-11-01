@@ -1,20 +1,16 @@
 #pragma once
 
-#include "language_def.h"
 #include "one_counter_automaton.h"
 
 #include <string>
 
 namespace active_learning {
 
-}
-
-namespace active_learning {
-
     struct R1CA_vertex {
         std::string name;
+        int cv;
 
-        explicit R1CA_vertex(std::string name);
+        explicit R1CA_vertex(std::string name, int cv);
 
         R1CA_vertex();
     };
@@ -51,7 +47,11 @@ namespace active_learning {
 
         R1CA(alphabet_t &alphabet);
 
-        void display(const std::string& path) const;
+        R1CA(std::vector<std::string> &states,
+             std::vector<std::tuple<std::string, R1CA_edge, std::string>> edges, const std::string &init_state,
+             const std::unordered_set<std::string> &final_states, alphabet_t &alphabet);
+
+        void display(const std::string& path) const override;
 
         bool is_final(const R1CA_vertex &v);
 
@@ -59,7 +59,7 @@ namespace active_learning {
 
     private:
         graph_t graph_;
-        std::string init_state;
+        std::string init_state_;
         std::unordered_set<std::string> final_states_;
         alphabet_t &alphabet_;
     };

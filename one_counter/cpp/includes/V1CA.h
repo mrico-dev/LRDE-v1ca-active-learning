@@ -1,7 +1,8 @@
 #pragma once
 
 #include "one_counter_automaton.h"
-#include "language_def.h"
+#include "displayable.h"
+#include "alphabet.h"
 
 #include <string>
 #include <optional>
@@ -43,31 +44,29 @@ namespace active_learning {
                 graph_color_t, // 1: "loop in no condition"
                 graph_color_t, // 2: "loop in condition"
                 graph_color_t>; // 3: "loop out"
+    private:
+        using looped_edges_t = std::pair<std::vector<V1CA::edge_descriptor_t>, std::vector<V1CA::edge_descriptor_t>>;
 
     private:
         void link_by_name(std::string, std::string, char symbol);
 
         states_t get_all_states_of_level(unsigned int level);
 
-        // recursive function
-        bool is_isomorphic_to_(V1CA &other, states_t &states1, states_t &states2, couples_t &res, label_map_t &);
-
         bool empty_(std::set<vertex_descriptor_t> &visited, vertex_descriptor_t curr);
 
-        bool is_state_isomorphic(V1CA &other, vertex_descriptor_t state1, vertex_descriptor_t state2, label_map_t &);
+        std::vector<V1CA::edge_descriptor_t> get_transitions_from_state(vertex_descriptor_t from);
 
     public:
-        V1CA();
+        explicit V1CA(visibly_alphabet_t &alphabet);
+        V1CA(const V1CA &copy) = default;
 
-        V1CA(std::vector<V1CA_vertex> &states, std::vector<V1CA_vertex> &initial_states,
-             std::vector<V1CA_vertex> &final_states, const visibly_alphabet_t &alphabet,
-             std::vector<std::tuple<V1CA_vertex, V1CA_vertex, char>> &edges);
+        V1CA(std::vector<V1CA_vertex> &states, std::string &initial_state,
+             std::vector<std::string> &final_states, visibly_alphabet_t &alphabet,
+             std::vector<std::tuple<std::string, std::string, char>> &edges);
 
         graph_t &get_mutable_graph();
 
         V1CA_edge get_edge(vertex_descriptor_t src, vertex_descriptor_t dest);
-
-        std::optional<couples_t> is_isomorphic_to(V1CA &other, unsigned int from_level1, unsigned from_level2);
 
         V1CA inter_with(V1CA &other);
 
@@ -79,7 +78,7 @@ namespace active_learning {
 
         bool is_subset_of(V1CA& other);
 
-        void display(const std::string &path);
+        void display(const std::string &path) const override;
 
         bool is_final(const V1CA_vertex &state);
 
@@ -88,6 +87,8 @@ namespace active_learning {
         std::optional<unsigned long> get_next_index(vertex_descriptor_t state_index, char c);
 
         std::optional<unsigned long> get_prev_index(vertex_descriptor_t state_index, char c);
+
+        void color_edges(looped_edges_t &new_edges);
 
         void set_period_cv(int cv);
 
@@ -111,9 +112,8 @@ namespace active_learning {
 
     private:
         graph_t graph;
-        std::unordered_set<std::string> init_states_;
+        std::string init_state_;
         std::unordered_set<std::string> final_states_;
-        std::shared_ptr<visibly_alphabet_t> alphabet_;
         graph_colors_t colors_;
         int period_cv_ = -1;
         bool periodic_ = false;

@@ -55,12 +55,10 @@ bool is_xanybnz(const std::string &word) {
 }
 
 int main() {
-    active_learning::visibly_alphabet_t alphabet;
-    alphabet.insert({'a', 1});
-    alphabet.insert({'b', -1});
-    // alphabet.insert({'x', 0});
-    // alphabet.insert({'y', 0});
-    // alphabet.insert({'z', 0});
+    std::map<char, int> symbols;
+    symbols.insert({'a', 1});
+    symbols.insert({'b', -1});
+    active_learning::visibly_alphabet_t alphabet(symbols);
 
     auto teacher = active_learning::semi_manual_teacher(is_anbn, alphabet);
     auto learner = active_learning::V1CA_learner(teacher, alphabet);

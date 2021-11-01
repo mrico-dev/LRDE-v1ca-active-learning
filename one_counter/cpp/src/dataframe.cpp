@@ -319,11 +319,12 @@ namespace active_learning {
      * @param ce The counter example word
      * @param teacher The teacher used for the membership query
      * @param alphabet The target language alphabet
+     * @param wc The object used to process counter value
      */
-    void RST::add_counter_example(const std::string &ce, teacher &teacher, visibly_alphabet_t &alphabet) {
+    void RST::add_counter_example(const std::string &ce, teacher &teacher, word_counter &wc) {
         for (const auto &word : get_all_prefixes(ce)) {
 
-            int cv = get_cv(word, alphabet);
+            int cv = wc.get_cv(word);
             expand_RST(cv);
             auto &table = tables_[cv];
 
@@ -455,5 +456,21 @@ namespace active_learning {
         }
 
         return out;
+    }
+
+    /**
+     * Returns all prefixes of a word, including the word itself and ""
+     * @param word The word whose prefixes need to be computed
+     * @return The vector of prefixes of the word
+     */
+    std::vector<std::string> RST::get_all_prefixes(const std::string &word) {
+        std::vector<std::string> res({""});
+        std::string pref;
+        for (char c : word) {
+            pref.push_back(c);
+            res.emplace_back(pref);
+        }
+
+        return res;
     }
 }

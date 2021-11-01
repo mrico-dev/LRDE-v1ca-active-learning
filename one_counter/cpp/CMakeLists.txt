@@ -1,20 +1,19 @@
 set(OPT_FLAGS "-Ofast -march=native -fomit-frame-pointer -flto")
 
 set(src_engine
-        src/v1ca_learning/V1CA.cpp
-        src/v1ca_learning/V1CA_learner.cpp
-        src/v1ca_learning/V1CA_builder.cpp
+        src/V1CA.cpp
+        src/V1CA_learner.cpp
         src/language.cpp
         src/teacher.cpp
         src/dataframe.cpp
         src/manual_teacher.cpp
         src/semi_manual_teacher.cpp
         src/automatic_teacher.cpp
-        src/r1ca_learning/R1CA.cpp
+        src/R1CA.cpp
         src/automaton_teacher.cpp
         src/one_counter_automaton.cpp
-        src/r1ca_learning/R1CA_builder.cpp
-        src/r1ca_learning/R1CA_learner.cpp
+        src/behaviour_graph.cpp
+        src/alphabet.cpp
         )
 
 include_directories(includes)
