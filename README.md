@@ -1,8 +1,6 @@
 
 # 01/21 to 08/21 work at LRDE
 
---
-
 The repository contains most of the work done at LRDE on the subject of "Active Learing on Visibly One-Counter Systems".
 You can find the report of my research work, and 3 directories containing code related to the project, as explained in the report.
 
