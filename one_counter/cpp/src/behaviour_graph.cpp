@@ -508,7 +508,7 @@ namespace active_learning {
                     if (verbose) {
                         std::cout << "Periodic pattern found between level " << m << " and " << m + k << ".\n";
                         std::cout << "Couples are: ";
-                        for (auto couple : couples.value())
+                        for (const auto& couple : couples.value())
                             std::cout << '(' << couple.first << ", " << couple.second << ")";
                         std::cout << "\n";
                     }
@@ -555,11 +555,43 @@ namespace active_learning {
     }
 
     std::shared_ptr<R1CA> behaviour_graph::to_r1ca(RST &rst_no_dup, basic_alphabet &alphabet, bool verbose) {
-        // TODO
-        (void) rst_no_dup;
-        (void) alphabet;
-        (void) verbose;
-        return nullptr;
+        if (rst_no_dup.size() < 3) {
+            if (verbose)
+                std::cout << "Behaviour graph does not have enough levels to find a period.";
+            return std::make_shared<R1CA>(to_r1ca_direct(alphabet));
+        }
+
+        // m (the potential cv of the period) goes from 0 to max_cv
+        //for (auto m = 0u; m < rst_no_dup.size(); ++m) {
+        for (auto m = 1u; m == 1u; m = 0) {
+            // k (the potential width of the period) goes from ((max_cv - m) / 2) to 1
+            // trying with only 1 for now
+            // for (auto k = (rst_no_dup.size() - m) / 2; k >= 1; --k) {
+            for (auto k = 1u; k == 1u; k = 0) {
+                // Checking if level m and level m+k are isomorphic
+                auto couples = find_period(m, k, alphabet);
+                if (couples.has_value()) {
+                    if (verbose) {
+                        std::cout << "Periodic pattern found between level " << m << " and " << m + k << ".\n";
+                        std::cout << "Couples are: ";
+                        for (const auto& couple : couples.value())
+                            std::cout << '(' << couple.first << ", " << couple.second << ")";
+                        std::cout << "\n";
+                    }
+
+                    auto bg_cp = behaviour_graph(*this);
+                    bg_cp.delete_high_levels(m + k);
+                    auto new_edges = bg_cp.link_period(*couples);
+
+                    return std::make_shared<R1CA>(to_r1ca_direct(alphabet, new_edges, m));
+                }
+            }
+        }
+
+        if (verbose)
+            std::cout << "No periodic pattern found. Returning behaviour graph as it is.\n";
+
+        return std::make_shared<R1CA>(to_r1ca_direct(alphabet));
     }
 
     R1CA behaviour_graph::to_r1ca_direct(basic_alphabet &alphabet) {

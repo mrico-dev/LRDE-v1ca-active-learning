@@ -6,11 +6,11 @@
 namespace active_learning {
 
     bool automaton_teacher::membership_query(const std::string &word) {
-        return ref_.evaluate(word).second;
+        return ref_.evaluate(word);
     }
 
     int automaton_teacher::count_query(const std::string &word) {
-        return ref_.evaluate(word).first;
+        return ref_.count(word);
     }
 
     std::optional<std::string> automaton_teacher::partial_equivalence_query(behaviour_graph &behaviour_graph, const std::string& path) {
@@ -27,7 +27,7 @@ namespace active_learning {
             if (user_input == "OK" or user_input == "ok" or user_input == "Ok" or user_input == "oK")
                 return std::nullopt;
 
-        } while (!is_from_alphabet(user_input, ref_.get_alphabet()) or !ref_.evaluate(user_input).second);
+        } while (!is_from_alphabet(user_input, ref_.get_alphabet()) or not ref_.count(user_input));
 
         return user_input;
     }
