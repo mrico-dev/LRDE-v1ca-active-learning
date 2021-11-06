@@ -2,7 +2,7 @@ set(OPT_FLAGS "-Ofast -march=native -fomit-frame-pointer -flto")
 
 set(src_engine
         src/V1CA.cpp
-        src/V1CA_learner.cpp
+        src/learner.cpp
         src/language.cpp
         src/teacher.cpp
         src/dataframe.cpp

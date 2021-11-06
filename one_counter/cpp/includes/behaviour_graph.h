@@ -98,6 +98,10 @@ namespace active_learning {
 
         R1CA to_r1ca_direct(basic_alphabet &alphabet);
 
+        R1CA to_r1ca_direct(basic_alphabet &alphabet,
+                            const looped_edges_t &new_edges,
+                            size_t new_edge_lvl);
+
         bool is_final(const std::string &v_name);
 
         bool is_init(const std::string &v_name);
@@ -110,6 +114,6 @@ namespace active_learning {
         graph_t graph_;
         std::string init_state_;
         std::unordered_set<std::string> final_states_;
-
+        size_t max_level_ = 0;
     };
 }

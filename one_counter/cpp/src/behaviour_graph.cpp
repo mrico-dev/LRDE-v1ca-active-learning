@@ -39,6 +39,9 @@ namespace active_learning {
         for (auto &v : states) {
             auto new_v = boost::add_vertex(bg_vertex_attr(v.first, v.second), graph_);
             name_to_desc[v.first] = new_v;
+
+            if (static_cast<size_t>(v.second) > max_level_)
+                max_level_ = v.second;
         }
 
         // Adding edges to graph
@@ -241,6 +244,8 @@ namespace active_learning {
                 boost::remove_vertex(index, graph_);
             }
         }
+
+        max_level_ = threshold_level;
     }
 
     behaviour_graph behaviour_graph::get_subgraph(unsigned int level_down, unsigned int level_top) {
@@ -558,6 +563,65 @@ namespace active_learning {
     }
 
     R1CA behaviour_graph::to_r1ca_direct(basic_alphabet &alphabet) {
-        return R1CA(alphabet);
+        auto vertices = boost::vertices(graph_);
+        auto states = static_cast<size_t>(vertices.second - vertices.first);
+
+        std::vector<vertex_descriptor_t> finals;
+
+        for (; vertices.first != vertices.second; ++vertices.first) {
+            if (is_final(graph_[*vertices.first].name))
+                finals.emplace_back(*vertices.first);
+        }
+
+        std::vector<std::tuple<size_t, size_t, char, int>> transitions;
+        for (auto ep = boost::edges(graph_); ep.first != ep.second; ++ep.first) {
+            auto edge = *ep.first;
+            auto src = boost::source(edge, graph_);
+            auto dest = boost::target(edge, graph_);
+            auto prop = graph_[edge];
+            transitions.emplace_back(std::make_tuple(src, dest, prop.symbol, prop.effect));
+        }
+
+        std::map<std::tuple<size_t, size_t, char>, pair_comp<bool, size_t>> colors;
+        return R1CA(states, max_level_, finals, transitions, colors, alphabet);
+    }
+
+    R1CA behaviour_graph::to_r1ca_direct(basic_alphabet &alphabet, const behaviour_graph::looped_edges_t &new_edges, size_t new_edge_lvl) {
+        auto vertices = boost::vertices(graph_);
+        auto states = static_cast<size_t>(vertices.second - vertices.first);
+
+        std::vector<vertex_descriptor_t> finals;
+
+        for (; vertices.first != vertices.second; ++vertices.first) {
+            if (is_final(graph_[*vertices.first].name))
+                finals.emplace_back(*vertices.first);
+        }
+
+        std::vector<std::tuple<size_t, size_t, char, int>> transitions;
+        for (auto ep = boost::edges(graph_); ep.first != ep.second; ++ep.first) {
+            auto edge = *ep.first;
+            auto src = boost::source(edge, graph_);
+            auto dest = boost::target(edge, graph_);
+            auto prop = graph_[edge];
+            transitions.emplace_back(std::make_tuple(src, dest, prop.symbol, prop.effect));
+        }
+
+        std::map<std::tuple<size_t, size_t, char>, pair_comp<bool, size_t>> colors;
+        for (auto new_e : new_edges.second) {
+            auto src = boost::source(new_e, graph_);
+            auto dest = boost::target(new_e, graph_);
+            auto symbol = graph_[new_e].symbol;
+            colors[{src, dest, symbol}] = {false, new_edge_lvl};
+
+            for (auto &trans: transitions) {
+                auto trans_src = std::get<0>(trans);
+                auto trans_dest = std::get<1>(trans);
+                auto trans_symbol = std::get<2>(trans);
+                if (trans_src == src and trans_symbol == symbol)
+                    colors[{trans_src, trans_dest, trans_symbol}] = {true, new_edge_lvl};
+            }
+        }
+
+        return R1CA(states, max_level_, finals, transitions, colors, alphabet);
     }
 }

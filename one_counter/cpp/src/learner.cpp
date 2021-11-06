@@ -1,13 +1,14 @@
-#include "V1CA_learner.h"
+#include "learner.h"
 #include "dataframe.h"
 #include "behaviour_graph.h"
 #include "language.h"
 
 #include <iostream>
+#include <automaton_teacher.h>
 
 namespace active_learning {
 
-    V1CA_learner::V1CA_learner(teacher &teacher, visibly_alphabet_t &alphabet) : teacher_(teacher), alphabet_(alphabet) {}
+    learner::learner(teacher &teacher, visibly_alphabet_t &alphabet) : teacher_(teacher), v_alphabet_(alphabet) {}
 
     /**
      * Make the RST consistent
@@ -15,21 +16,21 @@ namespace active_learning {
      * @param rst The RST
      * @return true if the RST was already consistent, false if a change was made
      */
-    bool V1CA_learner::make_rst_consistent(RST &rst) {
+    bool learner::make_rst_consistent(RST &rst) {
         for (auto &table : rst.get_tables()) {
             for (auto u_i = 0u; u_i < table.get_row_labels().size(); ++u_i) {
                 const std::string &u = table.get_row_labels()[u_i];
                 for (auto v_i = u_i + 1; v_i < table.get_row_labels().size(); ++v_i) {
                     const std::string &v = table.get_row_labels()[v_i];
-                    if (is_O_equivalent(u, v, rst, alphabet_, teacher_)) {
-                        for (auto c : alphabet_.symbols()) {
+                    if (is_O_equivalent_(u, v, rst)) {
+                        for (auto c : v_alphabet_.symbols()) {
                             std::string uc = u + c;
                             std::string vc = v + c;
-                            auto cv_uc = alphabet_.get_cv(uc);
+                            auto cv_uc = get_cv(uc);
                             if (cv_uc < 0) {
                                 continue;
                             }
-                            if (!is_O_equivalent(uc, vc, rst, alphabet_, teacher_)) {
+                            if (!is_O_equivalent_(uc, vc, rst)) {
                                 if (cv_uc > static_cast<int>(rst.size())) {
                                     throw std::runtime_error("make_rst_consistent(): Unexpected cv which is out of bound of rst was encountered.");
                                 }
@@ -58,19 +59,19 @@ namespace active_learning {
      * @param rst The RST
      * @return true if the RST was already closed, false if a change was made
      */
-    bool V1CA_learner::make_rst_closed(RST &rst) {
+    bool learner::make_rst_closed(RST &rst) {
         for (size_t i = 0; i < rst.size(); ++i) {
             auto &table = rst.get_tables()[i];
             for (const std::string& u: table.get_row_labels()) {
-                for (auto c : alphabet_.symbols()) {
+                for (auto c : v_alphabet_.symbols()) {
 
-                    int val = alphabet_.get_cv(c);
+                    int val = v_alphabet_.get_cv(c);
                     if ((val == -1 and i == 0) or (val == 1 and i == rst.size() - 1)) {
                         continue;
                     }
 
                     std::string uc = u + c;
-                    auto uc_O = get_congruence_set(uc, rst, alphabet_, teacher_);
+                    auto uc_O = get_congruence_set_(uc, rst);
                     int cv_uc = static_cast<int>(i) + val;
 
                     auto &uc_table = rst.get_tables()[cv_uc];
@@ -108,7 +109,7 @@ namespace active_learning {
      * @param verbose Set to true for debug printing
      * @return The obtained V1CA
      */
-    V1CA V1CA_learner::learn_V1CA(bool verbose)
+    V1CA learner::learn_V1CA(bool verbose)
     {
         // Initialising rst with "" and "" as only labels for rows and columns
         auto rst = RST(teacher_);
@@ -136,25 +137,117 @@ namespace active_learning {
             // Removing duplicates inside RST (to avoid state duplication)
             RST rst_no_dup = rst.remove_duplicate_rows();
             // Creating behaviour graph
-            auto bg = behaviour_graph(rst_no_dup, alphabet_, teacher_, alphabet_);
+            auto bg = behaviour_graph(rst_no_dup, v_alphabet_, teacher_, v_alphabet_);
 
             // Testing partial equivalence on behaviour graph
             auto partial_eq = teacher_.partial_equivalence_query(bg, "behaviour_graph");
             if (!partial_eq) {
                 // Making V1CA by (maybe) finding a periodic subgraph
-                res = bg.to_v1ca(rst_no_dup, alphabet_, verbose);
+                res = bg.to_v1ca(rst_no_dup, v_alphabet_, verbose);
                 // Testing V1CA equivalence
                 auto eq = teacher_.equivalence_query(*res, "v1ca");
                 if (!eq)
                     v1ca_correct = true;
                 else
-                    rst.add_counter_example(*eq, teacher_, alphabet_);
+                    rst.add_counter_example(*eq, teacher_, v_alphabet_);
             } else {
-                rst.add_counter_example(*partial_eq, teacher_, alphabet_);
+                rst.add_counter_example(*partial_eq, teacher_, v_alphabet_);
             }
         }
 
         return *res;
+    }
+
+    R1CA learner::learn_R1CA(bool verbose) {
+        // Initialising rst with "" and "" as only labels for rows and columns
+        auto rst = RST(teacher_);
+        std::shared_ptr<R1CA> res = nullptr;
+
+        // Looping until V1CA is accepted by teacher
+        auto v1ca_correct = false;
+        while (!v1ca_correct) {
+
+            auto is_consistent = false;
+            auto is_closed = false;
+
+            // Looping while RST is not closed and consistent
+            while (!is_consistent or !is_closed) {
+                is_consistent = make_rst_consistent(rst);
+                is_closed = make_rst_closed(rst);
+                // Some debug print
+                if (verbose) {
+                    std::cout << "RST after trying to make it closed/consistent:\n";
+                    std::cout << rst;
+                    std::cout << "Consistent: " << is_consistent << ", closed: " << is_closed << std::endl;
+                }
+            }
+
+            // Removing duplicates inside RST (to avoid state duplication)
+            RST rst_no_dup = rst.remove_duplicate_rows();
+            // Creating behaviour graph
+            auto bg = behaviour_graph(rst_no_dup, v_alphabet_, teacher_, v_alphabet_);
+
+            // Testing partial equivalence on behaviour graph
+            auto partial_eq = teacher_.partial_equivalence_query(bg, "behaviour_graph");
+            if (!partial_eq) {
+                // Making V1CA by (maybe) finding a periodic subgraph
+                res = bg.to_r1ca(rst_no_dup, b_alphabet_, verbose);
+                // Testing V1CA equivalence
+                auto eq = teacher_.equivalence_query(*res, "v1ca");
+                if (!eq)
+                    v1ca_correct = true;
+                else
+                    rst.add_counter_example(*eq, teacher_, v_alphabet_);
+            } else {
+                rst.add_counter_example(*partial_eq, teacher_, v_alphabet_);
+            }
+        }
+
+        return *res;
+    }
+
+    learner::learner(teacher &teacher, basic_alphabet &alphabet) : teacher_(teacher), b_alphabet_(alphabet) {}
+
+    int learner::get_cv(const std::string &word) {
+        if (mode_ == learner_mode::V1CA)
+            return v_alphabet_.get_cv(word);
+        else if (mode_ == learner_mode::R1CA)
+            return dynamic_cast<automaton_teacher&>(teacher_).count_query(word);
+
+        throw std::runtime_error("Unknown learner_type while processing cv");
+    }
+
+    int learner::get_cv(char symbol) {
+        if (mode_ == learner_mode::V1CA) {
+            return v_alphabet_.get_cv(symbol);
+        } else if (mode_ == learner_mode::R1CA) {
+            auto symbol_as_str = std::string() + symbol;
+            return dynamic_cast<automaton_teacher&>(teacher_).count_query(symbol_as_str);
+        }
+
+        throw std::runtime_error("Unknown learner_type while processing cv");
+    }
+
+    std::set<std::string> learner::get_congruence_set_(const std::string &word, RST &rst) {
+
+        if (mode_ == learner_mode::V1CA) {
+            return get_congruence_set(word, rst, v_alphabet_, teacher_);
+        } else if (mode_ == learner_mode::R1CA) {
+            return get_congruence_set(word, rst, dynamic_cast<automaton_teacher&>(teacher_), teacher_);
+        }
+
+        throw std::runtime_error("Unknown learner_type while processing congruence set");
+    }
+
+    bool learner::is_O_equivalent_(const std::string &word1, const std::string &word2, RST &rst) {
+
+        if (mode_ == learner_mode::V1CA) {
+            return is_O_equivalent(word1, word2, rst, v_alphabet_, teacher_);
+        } else if (mode_ == learner_mode::R1CA) {
+            return is_O_equivalent(word1, word2, rst, dynamic_cast<automaton_teacher&>(teacher_), teacher_);
+        }
+
+        throw std::runtime_error("Unknown learner_type while processing O_equivalent");
     }
 
 }

@@ -123,9 +123,10 @@ namespace active_learning {
                 << edge_color << "\"]";
         }
 
-        void write_r1ca(std::ostream &out, const R1CA::edge_descriptor_t &e) {
+        void write_r1ca(std::ostream &out, const size_t &src, const _s) {
             R1CA &r1ca = dynamic_cast<R1CA&>(to_display_);
 
+            // TODO
             R1CA::graph_t &g = r1ca.get_mutable_graph();
             const auto prop = g[e];
             out << "[label=\"";
@@ -157,8 +158,6 @@ namespace active_learning {
         void operator()(std::ostream &out, const Edge &e) {
             if (to_display_.get_displayable_type() == displayable_type::V1CA) {
                 write_v1ca(out, static_cast<V1CA::edge_descriptor_t>(e));
-            } else if (to_display_.get_displayable_type() == displayable_type::R1CA) {
-                write_r1ca(out, static_cast<R1CA::edge_descriptor_t>(e));
             } else if (to_display_.get_displayable_type() == displayable_type::behaviour_graph) {
                 write_behaviour_graph(out, static_cast<behaviour_graph::edge_descriptor_t>(e));
             } else {

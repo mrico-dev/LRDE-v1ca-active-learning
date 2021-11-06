@@ -6,61 +6,67 @@
 
 namespace active_learning {
 
-    struct R1CA_vertex {
-        std::string name;
-        int cv;
-
-        explicit R1CA_vertex(std::string name, int cv);
-
-        R1CA_vertex();
-    };
-
-    struct R1CA_edge {
+    struct transition_x {
+        size_t state;
+        size_t counter;
         char symbol;
-        int counter_change;
-        bool cond;
-        int cond_val;
-        bool cond_infeq;
 
-        R1CA_edge(char symbol, int counterChange, int condVal, bool condInfeq);
+        // Making it comparable so it can fit into a map
+        bool operator==(const transition_x &other) const {
+            return other.state == state
+               and other.counter == counter
+               and other.symbol == symbol;
+        }
 
-        R1CA_edge(char symbol, int counterChange);
+        bool operator<(const transition_x &other) const {
 
-        R1CA_edge();
+            if (state != other.state)
+                return state > other.state;
+            if (counter != other.counter)
+                return counter > other.counter;
+
+            return symbol > other.symbol;
+        }
     };
 
+    struct transition_y {
+        size_t state;
+        int effect;
+    };
 
     class R1CA : public one_counter_automaton {
     public:
-        using graph_t = boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, R1CA_vertex, R1CA_edge>;
-        using vertex_descriptor_t = typename boost::graph_traits<graph_t>::vertex_descriptor;
-        using edge_descriptor_t = typename boost::graph_traits<graph_t>::edge_descriptor;
         using couples_t = std::vector<std::pair<std::string, std::string>>;
-
-    private:
-        vertex_descriptor_t find_vertex_by_name(const std::string& vertex_name);
+        using transition_func_t = std::map<transition_x, transition_y>;
+        using state_t = size_t;
+        using transition_t = std::pair<state_t, state_t>;
 
     public:
-        std::pair<bool, int> evaluate(const std::string &word);
+        bool evaluate(const std::string &word);
+        int count(const std::string &word);
 
-        const alphabet_t &get_alphabet() const;
+        [[nodiscard]] const basic_alphabet_t &get_alphabet() const;
 
-        R1CA(alphabet_t &alphabet);
+        explicit R1CA(basic_alphabet_t &alphabet);
 
-        R1CA(std::vector<std::string> &states,
-             std::vector<std::tuple<std::string, R1CA_edge, std::string>> edges, const std::string &init_state,
-             const std::unordered_set<std::string> &final_states, alphabet_t &alphabet);
+        R1CA(size_t states,
+            size_t max_level,
+            std::vector<size_t> final_states,
+            const std::vector<std::tuple<size_t, size_t, char, int>> &transitions,
+            std::map<std::tuple<size_t, size_t, char>, pair_comp<bool, size_t>> &colors,
+            basic_alphabet &alphabet,
+            size_t init_state=0);
 
         void display(const std::string& path) const override;
 
-        bool is_final(const R1CA_vertex &v);
-
-        graph_t &get_mutable_graph();
+        bool is_final(size_t state);
 
     private:
-        graph_t graph_;
-        std::string init_state_;
-        std::unordered_set<std::string> final_states_;
-        alphabet_t &alphabet_;
+        size_t init_state_ = 0;
+        size_t states_n_;
+        size_t max_lvl_;
+        std::set<size_t> final_states_;
+        transition_func_t transitions_;
+        basic_alphabet_t &alphabet_;
     };
 }

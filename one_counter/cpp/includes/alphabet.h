@@ -42,6 +42,6 @@ namespace active_learning {
     };
 
     // Aliases
-    using alphabet_t = basic_alphabet;
+    using basic_alphabet_t = basic_alphabet;
     using visibly_alphabet_t = visibly_alphabet;
 }

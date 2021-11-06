@@ -2,7 +2,7 @@
 #include <semi_manual_teacher.h>
 #include "language.h"
 #include "manual_teacher.h"
-#include "V1CA_learner.h"
+#include "learner.h"
 
 /**
  * @return true if the word is in the language {a^n.b^n}
@@ -61,7 +61,7 @@ int main() {
     active_learning::visibly_alphabet_t alphabet(symbols);
 
     auto teacher = active_learning::semi_manual_teacher(is_anbn, alphabet);
-    auto learner = active_learning::V1CA_learner(teacher, alphabet);
+    auto learner = active_learning::learner(teacher, alphabet);
 
     auto res = learner.learn_V1CA(true);
     std::cout << teacher.sum_up_msg() << std::endl;
