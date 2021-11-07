@@ -13,3 +13,4 @@ The *one_counter/* directory contains two sub-directories: the *python/* and *cp
 Note that the python programs were made as quickly coded prototypes. The C++ program on the other hand was made to be more optimized and clean.
 
 The C++ version of the program is currently being worked on in order to support one-counter automata, and to be more clear to read and optimized.
+The Python codes are left as draft of the C++ program.
