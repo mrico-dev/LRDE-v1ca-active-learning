@@ -55,21 +55,35 @@ namespace active_learning {
 
     R1CA::R1CA(basic_alphabet &alphabet) : one_counter_automaton(alphabet, displayable_type::R1CA), alphabet_(alphabet) {}
 
-    void R1CA::display(const std::string &path) const {
+    void R1CA::display2(const std::string &path)  {
         // Writing dot file
         std::string full_path = path + ".dot";
         std::ofstream file;
         file.open(full_path);
-        boost::write_graphviz(file, graph_,
-                              vertex_writer((displayable &) *this),
-                              edge_writer((displayable &) *this, alphabet_));
+
+        // Writing states
+        file << "digraph G {\n";
+        for (auto i =0u; i < states_n_; ++i) {
+            file << i << "[ shape=\""
+                 << ((is_final(i)) ? "doublecircle" : "circle")
+                 << "\"];\n";
+        }
+        for (auto &trans : transitions_) {
+            file << trans.first.state
+                 << "->"
+                 << trans.second.state
+                 << " [label=\""
+                 << trans.first.symbol
+                 << "\"];\n";
+        }
+        file.close();
 
         // Creating png file
         // Hoping that you are on linux and have dot installed
         system(("dot -Tpng " + full_path + " > " + path + ".png").c_str());
     }
 
-    bool R1CA::is_final(size_t v) {
+    bool R1CA::is_final(size_t v) const {
         return final_states_.contains(v);
     }
 
@@ -77,14 +91,16 @@ namespace active_learning {
                size_t max_level,
                std::vector<size_t> final_states,
                const std::vector<std::tuple<size_t, size_t, char, int>>& transitions,
-               std::map<std::tuple<size_t, size_t, char>, pair_comp<bool, size_t>> &colors,
+               std::map<utils::triple_comp<size_t, size_t, char>, utils::pair_comp<bool, size_t>> &colors,
                basic_alphabet &alphabet,
                size_t init_state) : one_counter_automaton(alphabet, displayable_type::R1CA),
                                     init_state_(init_state),
                                     states_n_(states),
                                     max_lvl_(max_level),
-                                    final_states_(std::move(final_states)),
                                     alphabet_(alphabet) {
+        for (auto fs: final_states)
+            final_states_.insert(fs);
+
         for (auto &trans : transitions) {
             size_t src;
             size_t dest;
@@ -94,7 +110,7 @@ namespace active_learning {
 
             if (colors.contains({src, dest, symbol})) {
                 // Conditional transition
-                auto edge = std::make_tuple(src, dest, symbol);
+                auto edge = utils::make_triple_comp(src, dest, symbol);
                 const auto color = colors[edge];
                 const auto inf = color.first;
                 const auto level = color.second;
@@ -112,5 +128,10 @@ namespace active_learning {
                     transitions_[{src, i, symbol}] = {dest, effect};
             }
         }
+    }
+
+    void R1CA::display(const std::string &path) const {
+        (void) path;
+        throw std::invalid_argument("Display function not implemented for R1CA. Use display2() instead.");
     }
 }

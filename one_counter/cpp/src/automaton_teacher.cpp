@@ -48,7 +48,7 @@ namespace active_learning {
                 return std::nullopt;
 
             // input counter example must be from alphabet, and its cv must be 0
-        } while (!is_from_alphabet(user_input, ref_.get_alphabet()) or !ref_.evaluate(user_input).second);
+        } while (!is_from_alphabet(user_input, ref_.get_alphabet()) or not ref_.count(user_input));
 
         return user_input;
     }

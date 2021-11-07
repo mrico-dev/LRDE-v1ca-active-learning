@@ -37,25 +37,12 @@ namespace active_learning {
                 << ((final) ? "doublecircle" : "circle") << "\"]";
         }
 
-        void write_r1ca(std::ostream &out, const R1CA::vertex_descriptor_t &v) {
-            auto &r1ca = dynamic_cast<R1CA&>(to_display_);
-            auto &g = r1ca.get_mutable_graph();
-            const auto prop = g[v];
-            auto final = r1ca.is_final(prop);
-            std::string name = prop.name;
-            if (prop.name.empty())
-                name = "Entry point";
-            out << "[label=\"" << prop.name << "\", shape=\""
-                << ((final) ? "doublecircle" : "circle") << "\"]";
-        }
 
         template<class Vertex>
         void operator()(std::ostream &out, const Vertex &v) {
 
             if (to_display_.get_displayable_type() == displayable_type::V1CA) {
                 write_v1ca(out, static_cast<V1CA::vertex_descriptor_t>(v));
-            } else if (to_display_.get_displayable_type() == displayable_type::R1CA) {
-                write_r1ca(out, static_cast<R1CA::vertex_descriptor_t>(v));
             } else if (to_display_.get_displayable_type() == displayable_type::behaviour_graph) {
                 write_behaviour_graph(out, static_cast<behaviour_graph::vertex_descriptor_t>(v));
             } else {
@@ -95,7 +82,7 @@ namespace active_learning {
             auto &alphabet = dynamic_cast<visibly_alphabet_t&>(alphabet_);
 
             V1CA::graph_t &g = v1ca.get_mutable_graph();
-            auto e_pair = make_pair_comp(boost::source(e, g), boost::target(e, g));
+            auto e_pair = utils::make_pair_comp(boost::source(e, g), boost::target(e, g));
             const auto prop = g[e];
             out << "[label=\"";
 
@@ -116,37 +103,6 @@ namespace active_learning {
                 } else if (v1ca.get_mutable_loop_out_color().contains(e_pair)) {
                     edge_color = "blue";
                     loop_cond = "if cv <= " + std::to_string(v1ca.period_cv());
-                }
-            }
-
-            out << prop.symbol << " " << loop_cond << "\", color=\""
-                << edge_color << "\"]";
-        }
-
-        void write_r1ca(std::ostream &out, const size_t &src, const _s) {
-            R1CA &r1ca = dynamic_cast<R1CA&>(to_display_);
-
-            // TODO
-            R1CA::graph_t &g = r1ca.get_mutable_graph();
-            const auto prop = g[e];
-            out << "[label=\"";
-
-            std::string edge_color = "black";
-            std::string loop_cond;
-
-            if (prop.counter_change >= 0) {
-                loop_cond += "+";
-            }
-            loop_cond += std::to_string(prop.counter_change);
-
-            if (prop.cond) {
-                loop_cond += ", ";
-                if (prop.cond_infeq) {
-                    edge_color = "red";
-                    loop_cond = "if cv > " + std::to_string(prop.cond_val);
-                } else {
-                    edge_color = "blue";
-                    loop_cond = "if cv <= " + std::to_string(prop.cond_val);
                 }
             }
 

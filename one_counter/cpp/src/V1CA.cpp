@@ -431,19 +431,19 @@ namespace active_learning {
     void V1CA::color_edges(V1CA::looped_edges_t &new_edges) {
         // Coloring init (others)
         for (auto edge_it = boost::edges(graph); edge_it.first != edge_it.second; ++edge_it.first) {
-            get_mutable_init_edge_color().insert(make_pair_comp((*edge_it.first).m_source, (*edge_it.first).m_target));
+            get_mutable_init_edge_color().insert(utils::make_pair_comp((*edge_it.first).m_source, (*edge_it.first).m_target));
         }
 
         // Coloring loop in no cond edges
         for (auto &edge : new_edges.first) {
-            get_mutable_loop_in_no_cond_color().insert(make_pair_comp(edge.m_source, edge.m_target));
-            get_mutable_init_edge_color().erase(make_pair_comp(edge.m_source, edge.m_target));
+            get_mutable_loop_in_no_cond_color().insert(utils::make_pair_comp(edge.m_source, edge.m_target));
+            get_mutable_init_edge_color().erase(utils::make_pair_comp(edge.m_source, edge.m_target));
         }
 
         // Coloring loop in with cond edges
         for (auto &edge : new_edges.second) {
-            get_mutable_loop_in_with_cond_color().insert(make_pair_comp(edge.m_source, edge.m_target));
-            get_mutable_init_edge_color().erase(make_pair_comp(edge.m_source, edge.m_target));
+            get_mutable_loop_in_with_cond_color().insert(utils::make_pair_comp(edge.m_source, edge.m_target));
+            get_mutable_init_edge_color().erase(utils::make_pair_comp(edge.m_source, edge.m_target));
         }
 
         // Coloring loop out edges
@@ -454,9 +454,9 @@ namespace active_learning {
                     and get_edge(loop_in_edge_with_cond.first, loop_in_edge_with_cond.second).symbol ==
                         graph[other_edge_from_same_source].symbol) {
                     get_mutable_loop_out_color().insert(
-                            make_pair_comp(other_edge_from_same_source.m_source, other_edge_from_same_source.m_target));
+                            utils::make_pair_comp(other_edge_from_same_source.m_source, other_edge_from_same_source.m_target));
                     get_mutable_init_edge_color().erase(
-                            make_pair_comp(other_edge_from_same_source.m_source, other_edge_from_same_source.m_target));
+                            utils::make_pair_comp(other_edge_from_same_source.m_source, other_edge_from_same_source.m_target));
                 }
             }
         }

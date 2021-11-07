@@ -1,6 +1,7 @@
 #pragma once
 
 #include "one_counter_automaton.h"
+#include "utils.h"
 
 #include <string>
 
@@ -14,8 +15,8 @@ namespace active_learning {
         // Making it comparable so it can fit into a map
         bool operator==(const transition_x &other) const {
             return other.state == state
-               and other.counter == counter
-               and other.symbol == symbol;
+                   and other.counter == counter
+                   and other.symbol == symbol;
         }
 
         bool operator<(const transition_x &other) const {
@@ -43,6 +44,7 @@ namespace active_learning {
 
     public:
         bool evaluate(const std::string &word);
+
         int count(const std::string &word);
 
         [[nodiscard]] const basic_alphabet_t &get_alphabet() const;
@@ -50,21 +52,23 @@ namespace active_learning {
         explicit R1CA(basic_alphabet_t &alphabet);
 
         R1CA(size_t states,
-            size_t max_level,
-            std::vector<size_t> final_states,
-            const std::vector<std::tuple<size_t, size_t, char, int>> &transitions,
-            std::map<std::tuple<size_t, size_t, char>, pair_comp<bool, size_t>> &colors,
-            basic_alphabet &alphabet,
-            size_t init_state=0);
+             size_t max_level,
+             std::vector<size_t> final_states,
+             const std::vector<std::tuple<size_t, size_t, char, int>> &transitions,
+             std::map<utils::triple_comp<size_t, size_t, char>, utils::pair_comp<bool, size_t>> &colors,
+             basic_alphabet &alphabet,
+             size_t init_state = 0);
 
-        void display(const std::string& path) const override;
+        void display2(const std::string &path);
 
-        bool is_final(size_t state);
+        void display(const std::string &path) const override;
+
+        bool is_final(size_t state) const;
 
     private:
         size_t init_state_ = 0;
-        size_t states_n_;
-        size_t max_lvl_;
+        size_t states_n_{};
+        size_t max_lvl_{};
         std::set<size_t> final_states_;
         transition_func_t transitions_;
         basic_alphabet_t &alphabet_;

@@ -614,7 +614,7 @@ namespace active_learning {
             transitions.emplace_back(std::make_tuple(src, dest, prop.symbol, prop.effect));
         }
 
-        std::map<std::tuple<size_t, size_t, char>, pair_comp<bool, size_t>> colors;
+        std::map<utils::triple_comp<size_t, size_t, char>, utils::pair_comp<bool, size_t>> colors;
         return R1CA(states, max_level_, finals, transitions, colors, alphabet);
     }
 
@@ -638,7 +638,7 @@ namespace active_learning {
             transitions.emplace_back(std::make_tuple(src, dest, prop.symbol, prop.effect));
         }
 
-        std::map<std::tuple<size_t, size_t, char>, pair_comp<bool, size_t>> colors;
+        std::map<utils::triple_comp<size_t, size_t, char>, utils::pair_comp<bool, size_t>> colors;
         for (auto new_e : new_edges.second) {
             auto src = boost::source(new_e, graph_);
             auto dest = boost::target(new_e, graph_);

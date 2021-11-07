@@ -3,6 +3,7 @@
 #include "one_counter_automaton.h"
 #include "displayable.h"
 #include "alphabet.h"
+#include "utils.h"
 
 #include <string>
 #include <optional>
@@ -39,7 +40,7 @@ namespace active_learning {
         using couples_t = std::vector<std::pair<std::string, std::string>>;
 
         // Cannot use edge descriptor because their value change depending on which graph they're from
-        using graph_color_t = std::set<pair_comp<vertex_descriptor_t, vertex_descriptor_t>>;
+        using graph_color_t = std::set<utils::pair_comp<vertex_descriptor_t, vertex_descriptor_t>>;
         using graph_colors_t = std::tuple<graph_color_t, // 0: "init edges"
                 graph_color_t, // 1: "loop in no condition"
                 graph_color_t, // 2: "loop in condition"
