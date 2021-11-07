@@ -1,10 +1,16 @@
 
-# 01/21 to 08/21 work at LRDE
+# "Active Learing on Visibly One-Counter Systems"
 
 The repository contains most of the work done at LRDE on the subject of "Active Learing on Visibly One-Counter Systems".
-You can find the report of my research work, and 3 directories containing code related to the project, as explained in the report.
+
+The report of my research work is not yet available here due to copying issues, but here is all my code related to active learning on automata.
+
+The goal of the program is to be able to get a Visibly One-Counter Automaton from a teacher who has knowledge over a language.
 
 The *angluin_regular/* directory contains a python version of Angluin's algorithm working on regular languages.
-The *one_counter/* directory contains two sub-directories: the *python/* and *cpp/* directories. They contain a Python and C++ implementation of the algorithm described in the report.
+The *one_counter/* directory contains two sub-directories: the *python/* and *cpp/* directories. They contain a Python and C++ implementation of the algorithm.
 
 Note that the python programs were made as quickly coded prototypes. The C++ program on the other hand was made to be more optimized and clean.
+
+The C++ version of the program is currently being worked on in order to support one-counter automata, and to be more clear to read and optimized.
+The Python codes are left as draft of the C++ program.
