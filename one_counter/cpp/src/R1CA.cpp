@@ -1,9 +1,8 @@
 #include "R1CA.h"
-#include "dot_writers.h"
 
-#include <utility>
 #include <fstream>
-#include <boost/graph/graphviz.hpp>
+#include <utility>
+#include <V1CA.h>
 
 namespace active_learning {
 
@@ -14,10 +13,13 @@ namespace active_learning {
 
         // Getting from states to states using symbol of the word
         for (char c : word) {
-            if (not transitions_.contains({curr_state, static_cast<size_t>(counter), c}))
+            // FIXME max_lvl_ or max_level_ + 1 (and underneath as well)
+            auto counter_clip = (static_cast<size_t>(counter) > max_lvl_) ? max_lvl_ : counter;
+
+            if (not transitions_.contains({curr_state, counter_clip, c}))
                 return false;
 
-            transition_y trans_y = transitions_[{curr_state, static_cast<size_t>(counter), c}];
+            transition_y trans_y = transitions_[{curr_state, counter_clip, c}];
             curr_state = trans_y.state;
             counter += trans_y.effect;
 
@@ -35,10 +37,12 @@ namespace active_learning {
 
         // Getting from states to states using symbol of the word
         for (char c : word) {
-            if (not transitions_.contains({curr_state, static_cast<size_t>(counter), c}))
+            auto counter_clip = (static_cast<size_t>(counter) > max_lvl_) ? max_lvl_ : counter;
+
+            if (not transitions_.contains({curr_state, counter_clip, c}))
                 return -1;
 
-            transition_y trans_y = transitions_[{curr_state, static_cast<size_t>(counter), c}];
+            transition_y trans_y = transitions_[{curr_state, counter_clip, c}];
             curr_state = trans_y.state;
             counter += trans_y.effect;
 
@@ -53,34 +57,10 @@ namespace active_learning {
         return alphabet_;
     }
 
-    R1CA::R1CA(basic_alphabet &alphabet) : one_counter_automaton(alphabet, displayable_type::R1CA), alphabet_(alphabet) {}
-
-    void R1CA::display2(const std::string &path)  {
-        // Writing dot file
-        std::string full_path = path + ".dot";
-        std::ofstream file;
-        file.open(full_path);
-
-        // Writing states
-        file << "digraph G {\n";
-        for (auto i =0u; i < states_n_; ++i) {
-            file << i << "[ shape=\""
-                 << ((is_final(i)) ? "doublecircle" : "circle")
-                 << "\"];\n";
-        }
-        for (auto &trans : transitions_) {
-            file << trans.first.state
-                 << "->"
-                 << trans.second.state
-                 << " [label=\""
-                 << trans.first.symbol
-                 << "\"];\n";
-        }
-        file.close();
-
-        // Creating png file
-        // Hoping that you are on linux and have dot installed
-        system(("dot -Tpng " + full_path + " > " + path + ".png").c_str());
+    R1CA::R1CA(basic_alphabet &alphabet) : one_counter_automaton(alphabet, displayable_type::R1CA),
+                                           alphabet_(alphabet) {
+        states_n_ = 0;
+        max_lvl_ = UINT64_MAX;
     }
 
     bool R1CA::is_final(size_t v) const {
@@ -90,7 +70,7 @@ namespace active_learning {
     R1CA::R1CA(size_t states,
                size_t max_level,
                std::vector<size_t> final_states,
-               const std::vector<std::tuple<size_t, size_t, char, int>>& transitions,
+               const std::vector<std::tuple<size_t, size_t, char, int>> &transitions,
                std::map<utils::triple_comp<size_t, size_t, char>, utils::pair_comp<bool, size_t>> &colors,
                basic_alphabet &alphabet,
                size_t init_state) : one_counter_automaton(alphabet, displayable_type::R1CA),
@@ -130,8 +110,44 @@ namespace active_learning {
         }
     }
 
-    void R1CA::display(const std::string &path) const {
-        (void) path;
-        throw std::invalid_argument("Display function not implemented for R1CA. Use display2() instead.");
+    void R1CA::display(const std::string &path) {
+        // Writing dot file
+        std::string full_path = path + ".dot";
+        std::ofstream file;
+        file.open(full_path);
+
+        // Writing states
+        file << "digraph G {\n";
+        for (auto i = 0u; i < states_n_; ++i) {
+            file << i << "[ shape=\""
+                 << ((is_final(i)) ? "doublecircle" : "circle")
+                 << "\"];\n";
+        }
+        for (auto &trans : transitions_) {
+            file << trans.first.state
+                 << "->"
+                 << trans.second.state
+                 << " [label=\""
+                 << trans.first.symbol
+                 << "\"];\n";
+        }
+        file.close();
+
+        // Creating png file
+        // Hoping that you are on linux and have dot installed
+        system(("dot -Tpng " + full_path + " > " + path + ".png").c_str());
     }
+
+    R1CA R1CA::from_scratch(size_t init_state, size_t states_n, size_t max_lvl,
+                           const std::set<size_t> &final_states, const transition_func_t &transitions,
+                           basic_alphabet_t &alphabet) {
+        return R1CA(alphabet, displayable_type::R1CA, init_state, states_n, max_lvl, final_states, transitions,
+                    alphabet);
+    }
+
+    R1CA::R1CA(alphabet &alphabet, displayable_type dispType, size_t initState, size_t statesN, size_t maxLvl,
+               std::set<size_t> finalStates, R1CA::transition_func_t transitions,
+               basic_alphabet_t &alphabet1) : one_counter_automaton(alphabet, dispType), init_state_(initState),
+                                              states_n_(statesN), max_lvl_(maxLvl), final_states_(std::move(finalStates)),
+                                              transitions_(std::move(transitions)), alphabet_(alphabet1) {}
 }

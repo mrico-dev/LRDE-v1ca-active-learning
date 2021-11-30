@@ -12,6 +12,8 @@ namespace active_learning {
         return symbols_;
     }
 
+    basic_alphabet::basic_alphabet(std::set<char> symbols) : symbols_(std::move(symbols)) {}
+
     bool visibly_alphabet::contains(char symbol) {
         return symbols_and_values_.contains(symbol);
     }

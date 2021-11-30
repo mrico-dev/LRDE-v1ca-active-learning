@@ -39,15 +39,20 @@ namespace active_learning {
     public:
         using couples_t = std::vector<std::pair<std::string, std::string>>;
         using transition_func_t = std::map<transition_x, transition_y>;
-        using state_t = size_t;
-        using transition_t = std::pair<state_t, state_t>;
+        using transition_t = std::pair<size_t, size_t>;
+
+    private:
+    public:
+        R1CA(alphabet &alphabet, displayable_type dispType, size_t initState, size_t statesN, size_t maxLvl,
+             std::set<size_t> finalStates, transition_func_t transitions, basic_alphabet_t &alphabet1);
 
     public:
         bool evaluate(const std::string &word);
 
         int count(const std::string &word);
 
-        [[nodiscard]] const basic_alphabet_t &get_alphabet() const;
+        [[nodiscard]]
+        const basic_alphabet_t &get_alphabet() const;
 
         explicit R1CA(basic_alphabet_t &alphabet);
 
@@ -59,16 +64,20 @@ namespace active_learning {
              basic_alphabet &alphabet,
              size_t init_state = 0);
 
-        void display2(const std::string &path);
+        void display(const std::string &path) override;
 
-        void display(const std::string &path) const override;
-
+        [[nodiscard]]
         bool is_final(size_t state) const;
+
+        static R1CA
+        from_scratch(size_t initState, size_t statesN, size_t maxLvl,
+                     const std::set<size_t> &finalStates, const transition_func_t &transitions,
+                     basic_alphabet_t &alphabet1);
 
     private:
         size_t init_state_ = 0;
-        size_t states_n_{};
-        size_t max_lvl_{};
+        size_t states_n_;
+        size_t max_lvl_;
         std::set<size_t> final_states_;
         transition_func_t transitions_;
         basic_alphabet_t &alphabet_;

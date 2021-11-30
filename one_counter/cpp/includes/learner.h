@@ -4,10 +4,12 @@
 #include "R1CA.h"
 #include "teacher.h"
 #include "dataframe.h"
+#include "automaton_teacher.h"
 
 namespace active_learning {
 
     enum class learner_mode {
+        UNINITIALIZED,
         V1CA,
         R1CA
     };
@@ -19,7 +21,7 @@ namespace active_learning {
 
         bool make_rst_closed(RST &rst);
 
-        int get_cv(const std::string& word);
+        int get_cv(const std::string &word);
 
         int get_cv(char symbol);
 
@@ -28,17 +30,19 @@ namespace active_learning {
         std::set<std::string> get_congruence_set_(const std::string &word, RST &rst);
 
     public:
-        learner(teacher &teacher, visibly_alphabet_t &alphabet);
-        learner(teacher &teacher, basic_alphabet &alphabet);
+        learner(teacher &teacher, alphabet &alphabet);
 
         V1CA learn_V1CA(bool verbose = false);
+
         R1CA learn_R1CA(bool verbose = false);
 
     private:
         teacher &teacher_;
-        visibly_alphabet_t v_alphabet_;
-        basic_alphabet b_alphabet_;
-        learner_mode mode_;
+        alphabet &alphabet_;
+        visibly_alphabet_t *as_visibly_alphabet_;
+        basic_alphabet_t *as_basic_alphabet_;
+        automaton_teacher *as_automaton_teacher_;
+        learner_mode mode_ = learner_mode::UNINITIALIZED;
     };
 
 }

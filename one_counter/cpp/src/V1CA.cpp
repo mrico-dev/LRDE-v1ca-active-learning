@@ -119,7 +119,7 @@ namespace active_learning {
      * This function requires to be on linux and have dot installed to get the .png file
      * @param path The path to the V1CA png and dot file, without the extension
      */
-    void V1CA::display(const std::string &path) const {
+    void V1CA::display(const std::string &path) {
 
         // Writing dot file
         std::string full_path = path + ".dot";

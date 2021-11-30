@@ -59,6 +59,7 @@ namespace active_learning {
 
     public:
         explicit V1CA(visibly_alphabet_t &alphabet);
+
         V1CA(const V1CA &copy) = default;
 
         V1CA(std::vector<V1CA_vertex> &states, std::string &initial_state,
@@ -75,11 +76,11 @@ namespace active_learning {
 
         bool empty();
 
-        bool is_equivalent_to(V1CA& other);
+        bool is_equivalent_to(V1CA &other);
 
-        bool is_subset_of(V1CA& other);
+        bool is_subset_of(V1CA &other);
 
-        void display(const std::string &path) const override;
+        void display(const std::string &path) override;
 
         bool is_final(const V1CA_vertex &state);
 

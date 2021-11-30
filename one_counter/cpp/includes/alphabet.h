@@ -14,6 +14,9 @@ namespace active_learning {
 
     class basic_alphabet : public alphabet {
     public:
+        explicit basic_alphabet(std::set<char> symbols);
+        basic_alphabet() = default;
+
         bool contains(char symbol);
 
         [[nodiscard]] const std::set<char> &symbols() const override;
@@ -24,7 +27,7 @@ namespace active_learning {
 
     class visibly_alphabet : public alphabet, public word_counter {
     public:
-        explicit visibly_alphabet(const std::map<char, int>& symbolsAndValues);
+        explicit visibly_alphabet(const std::map<char, int> &symbolsAndValues);
 
         visibly_alphabet();
 

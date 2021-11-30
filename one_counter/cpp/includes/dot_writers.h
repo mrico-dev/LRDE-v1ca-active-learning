@@ -14,7 +14,7 @@ namespace active_learning {
         explicit vertex_writer(displayable &display_obj) : to_display_(display_obj) {}
 
         void write_behaviour_graph(std::ostream &out, const behaviour_graph::vertex_descriptor_t &v) {
-            auto &bg = dynamic_cast<behaviour_graph&>(to_display_);
+            auto &bg = dynamic_cast<behaviour_graph &>(to_display_);
             auto &g = bg.get_mutable_graph();
             const auto prop = g[v];
             auto final = bg.is_final(prop.name);
@@ -26,7 +26,7 @@ namespace active_learning {
         }
 
         void write_v1ca(std::ostream &out, const V1CA::vertex_descriptor_t &v) {
-            auto &v1ca = dynamic_cast<V1CA&>(to_display_);
+            auto &v1ca = dynamic_cast<V1CA &>(to_display_);
             auto &g = v1ca.get_mutable_graph();
             const auto prop = g[v];
             auto final = v1ca.is_final(prop);
@@ -62,7 +62,7 @@ namespace active_learning {
 
         void write_behaviour_graph(std::ostream &out, const behaviour_graph::edge_descriptor_t &e) {
 
-            auto &bg = dynamic_cast<behaviour_graph&>(to_display_);
+            auto &bg = dynamic_cast<behaviour_graph &>(to_display_);
             auto &graph = bg.get_mutable_graph();
 
             const auto prop = graph[e];
@@ -78,8 +78,8 @@ namespace active_learning {
 
         void write_v1ca(std::ostream &out, const V1CA::edge_descriptor_t &e) {
 
-            auto &v1ca = dynamic_cast<V1CA&>(to_display_);
-            auto &alphabet = dynamic_cast<visibly_alphabet_t&>(alphabet_);
+            auto &v1ca = dynamic_cast<V1CA &>(to_display_);
+            auto &alphabet = dynamic_cast<visibly_alphabet_t &>(alphabet_);
 
             V1CA::graph_t &g = v1ca.get_mutable_graph();
             auto e_pair = utils::make_pair_comp(boost::source(e, g), boost::target(e, g));

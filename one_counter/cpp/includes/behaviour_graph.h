@@ -86,7 +86,7 @@ namespace active_learning {
 
         behaviour_graph(RST &rst, word_counter &wc, teacher &teacher, alphabet &alphabet);
 
-        void display(const std::string &path) const override;
+        void display(const std::string &path) override;
 
         graph_t &get_mutable_graph();
 

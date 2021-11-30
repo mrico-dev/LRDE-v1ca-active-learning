@@ -11,7 +11,8 @@
 
 namespace active_learning {
 
-    bool is_O_equivalent(const std::string &word1, const std::string &word2, RST &rst, word_counter &wc, teacher &teacher);
+    bool
+    is_O_equivalent(const std::string &word1, const std::string &word2, RST &rst, word_counter &wc, teacher &teacher);
 
     std::set<std::string> get_congruence_set(const std::string &word, RST &rst, word_counter &wc, teacher &teacher);
 

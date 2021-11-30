@@ -71,7 +71,7 @@ namespace active_learning {
         return graph_;
     }
 
-    void behaviour_graph::display(const std::string &path) const {
+    void behaviour_graph::display(const std::string &path) {
         // Writing dot file
         std::string full_path = path + ".dot";
         std::ofstream file;
@@ -595,6 +595,7 @@ namespace active_learning {
     }
 
     R1CA behaviour_graph::to_r1ca_direct(basic_alphabet &alphabet) {
+        // Creating a finite state automaton, leaving the counter useless
         auto vertices = boost::vertices(graph_);
         auto states = static_cast<size_t>(vertices.second - vertices.first);
 
@@ -615,7 +616,8 @@ namespace active_learning {
         }
 
         std::map<utils::triple_comp<size_t, size_t, char>, utils::pair_comp<bool, size_t>> colors;
-        return R1CA(states, max_level_, finals, transitions, colors, alphabet);
+        // max_lvl is infinite cause we do not use the counter
+        return R1CA(states, UINT64_MAX, finals, transitions, colors, alphabet);
     }
 
     R1CA behaviour_graph::to_r1ca_direct(basic_alphabet &alphabet, const behaviour_graph::looped_edges_t &new_edges, size_t new_edge_lvl) {

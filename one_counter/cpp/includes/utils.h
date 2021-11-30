@@ -7,6 +7,8 @@ namespace utils {
     template<class T1, class T2>
     struct pair_comp {
 
+        pair_comp() = default;
+
         pair_comp(T1 e1, T2 e2) : first(e1), second(e2) {}
 
         bool operator==(const pair_comp<T1, T2> &p1) const {
@@ -26,7 +28,7 @@ namespace utils {
         return pair_comp(e1, e2);
     }
 
-    template <class T1, class T2, class T3>
+    template<class T1, class T2, class T3>
     struct triple_comp {
 
         triple_comp(T1 e1, T2 e2, T3 e3) : first(e1), second(e2), third{e3} {}

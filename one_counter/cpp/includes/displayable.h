@@ -13,7 +13,7 @@ namespace active_learning {
     public:
         explicit displayable(displayable_type type) : displayable_type_(type) {}
 
-        virtual void display(const std::string &path) const = 0;
+        virtual void display(const std::string &path) = 0;
 
         displayable_type get_displayable_type() { return displayable_type_; }
 

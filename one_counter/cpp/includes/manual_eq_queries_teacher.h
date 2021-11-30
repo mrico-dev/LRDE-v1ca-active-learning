@@ -12,7 +12,7 @@ namespace active_learning {
     protected:
 
         static V1CA &oca_to_v1ca(one_counter_automaton &automaton) {
-            auto v1ca_ptr = dynamic_cast<V1CA*>(&automaton);
+            auto v1ca_ptr = dynamic_cast<V1CA *>(&automaton);
             if (!v1ca_ptr)
                 throw std::runtime_error("teacher must take a V1CA as argument");
 
@@ -21,7 +21,8 @@ namespace active_learning {
 
     public:
 
-        std::optional<std::string> partial_equivalence_query(behaviour_graph &behaviour_graph, const std::string &path) override {
+        std::optional<std::string>
+        partial_equivalence_query(behaviour_graph &behaviour_graph, const std::string &path) override {
             behaviour_graph.display(path);
 
             std::cout << "Please check the behaviour graph (graph name should be " << path
@@ -40,7 +41,8 @@ namespace active_learning {
             return user_input;
         }
 
-        std::optional<std::string> equivalence_query(one_counter_automaton &automaton, const std::string &path) override {
+        std::optional<std::string>
+        equivalence_query(one_counter_automaton &automaton, const std::string &path) override {
             automaton.display(path);
 
             std::cout << "Please check the V1CA automaton (automaton name should be " << path

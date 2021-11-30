@@ -8,7 +8,11 @@
 
 namespace active_learning {
 
-    learner::learner(teacher &teacher, visibly_alphabet_t &alphabet) : teacher_(teacher), v_alphabet_(alphabet) {}
+    learner::learner(teacher &teacher, alphabet &alphabet) : teacher_(teacher), alphabet_(alphabet) {
+        as_visibly_alphabet_ = dynamic_cast<visibly_alphabet_t*>(&alphabet);
+        as_basic_alphabet_ = dynamic_cast<basic_alphabet_t*>(&alphabet);
+        as_automaton_teacher_ = dynamic_cast<automaton_teacher*>(&teacher);
+    }
 
     /**
      * Make the RST consistent
@@ -23,7 +27,7 @@ namespace active_learning {
                 for (auto v_i = u_i + 1; v_i < table.get_row_labels().size(); ++v_i) {
                     const std::string &v = table.get_row_labels()[v_i];
                     if (is_O_equivalent_(u, v, rst)) {
-                        for (auto c : v_alphabet_.symbols()) {
+                        for (auto c : alphabet_.symbols()) {
                             std::string uc = u + c;
                             std::string vc = v + c;
                             auto cv_uc = get_cv(uc);
@@ -63,9 +67,9 @@ namespace active_learning {
         for (size_t i = 0; i < rst.size(); ++i) {
             auto &table = rst.get_tables()[i];
             for (const std::string& u: table.get_row_labels()) {
-                for (auto c : v_alphabet_.symbols()) {
+                for (auto c : alphabet_.symbols()) {
 
-                    int val = v_alphabet_.get_cv(c);
+                    int val = get_cv(c);
                     if ((val == -1 and i == 0) or (val == 1 and i == rst.size() - 1)) {
                         continue;
                     }
@@ -111,6 +115,10 @@ namespace active_learning {
      */
     V1CA learner::learn_V1CA(bool verbose)
     {
+        mode_ = learner_mode::V1CA;
+        if (!as_visibly_alphabet_)
+            throw std::invalid_argument("Learning a V1CA requires a visibly type of alphabet.");
+
         // Initialising rst with "" and "" as only labels for rows and columns
         auto rst = RST(teacher_);
         std::shared_ptr<V1CA> res = nullptr;
@@ -137,21 +145,21 @@ namespace active_learning {
             // Removing duplicates inside RST (to avoid state duplication)
             RST rst_no_dup = rst.remove_duplicate_rows();
             // Creating behaviour graph
-            auto bg = behaviour_graph(rst_no_dup, v_alphabet_, teacher_, v_alphabet_);
+            auto bg = behaviour_graph(rst_no_dup, *as_visibly_alphabet_, teacher_, alphabet_);
 
             // Testing partial equivalence on behaviour graph
             auto partial_eq = teacher_.partial_equivalence_query(bg, "behaviour_graph");
             if (!partial_eq) {
                 // Making V1CA by (maybe) finding a periodic subgraph
-                res = bg.to_v1ca(rst_no_dup, v_alphabet_, verbose);
+                res = bg.to_v1ca(rst_no_dup, *as_visibly_alphabet_, verbose);
                 // Testing V1CA equivalence
                 auto eq = teacher_.equivalence_query(*res, "v1ca");
                 if (!eq)
                     v1ca_correct = true;
                 else
-                    rst.add_counter_example(*eq, teacher_, v_alphabet_);
+                    rst.add_counter_example(*eq, teacher_, *as_visibly_alphabet_);
             } else {
-                rst.add_counter_example(*partial_eq, teacher_, v_alphabet_);
+                rst.add_counter_example(*partial_eq, teacher_, *as_visibly_alphabet_);
             }
         }
 
@@ -159,6 +167,10 @@ namespace active_learning {
     }
 
     R1CA learner::learn_R1CA(bool verbose) {
+        if (!as_basic_alphabet_)
+            throw std::invalid_argument("Learning a R1CA requires a basic type of alphabet.");
+
+        mode_ = learner_mode::R1CA;
         // Initialising rst with "" and "" as only labels for rows and columns
         auto rst = RST(teacher_);
         std::shared_ptr<R1CA> res = nullptr;
@@ -185,32 +197,31 @@ namespace active_learning {
             // Removing duplicates inside RST (to avoid state duplication)
             RST rst_no_dup = rst.remove_duplicate_rows();
             // Creating behaviour graph
-            auto bg = behaviour_graph(rst_no_dup, v_alphabet_, teacher_, v_alphabet_);
+            auto bg = behaviour_graph(rst_no_dup, *as_automaton_teacher_, teacher_, alphabet_);
 
             // Testing partial equivalence on behaviour graph
             auto partial_eq = teacher_.partial_equivalence_query(bg, "behaviour_graph");
             if (!partial_eq) {
                 // Making V1CA by (maybe) finding a periodic subgraph
-                res = bg.to_r1ca(rst_no_dup, b_alphabet_, verbose);
+                res = bg.to_r1ca(rst_no_dup, *as_basic_alphabet_, verbose);
                 // Testing V1CA equivalence
                 auto eq = teacher_.equivalence_query(*res, "v1ca");
                 if (!eq)
                     v1ca_correct = true;
                 else
-                    rst.add_counter_example(*eq, teacher_, v_alphabet_);
+                    rst.add_counter_example(*eq, teacher_, *as_automaton_teacher_);
             } else {
-                rst.add_counter_example(*partial_eq, teacher_, v_alphabet_);
+                rst.add_counter_example(*partial_eq, teacher_, *as_automaton_teacher_);
             }
         }
 
         return *res;
     }
 
-    learner::learner(teacher &teacher, basic_alphabet &alphabet) : teacher_(teacher), b_alphabet_(alphabet) {}
 
     int learner::get_cv(const std::string &word) {
         if (mode_ == learner_mode::V1CA)
-            return v_alphabet_.get_cv(word);
+            return as_visibly_alphabet_->get_cv(word);
         else if (mode_ == learner_mode::R1CA)
             return dynamic_cast<automaton_teacher&>(teacher_).count_query(word);
 
@@ -219,7 +230,7 @@ namespace active_learning {
 
     int learner::get_cv(char symbol) {
         if (mode_ == learner_mode::V1CA) {
-            return v_alphabet_.get_cv(symbol);
+            return as_visibly_alphabet_->get_cv(symbol);
         } else if (mode_ == learner_mode::R1CA) {
             auto symbol_as_str = std::string() + symbol;
             return dynamic_cast<automaton_teacher&>(teacher_).count_query(symbol_as_str);
@@ -231,7 +242,7 @@ namespace active_learning {
     std::set<std::string> learner::get_congruence_set_(const std::string &word, RST &rst) {
 
         if (mode_ == learner_mode::V1CA) {
-            return get_congruence_set(word, rst, v_alphabet_, teacher_);
+            return get_congruence_set(word, rst, *as_visibly_alphabet_, teacher_);
         } else if (mode_ == learner_mode::R1CA) {
             return get_congruence_set(word, rst, dynamic_cast<automaton_teacher&>(teacher_), teacher_);
         }
@@ -242,7 +253,7 @@ namespace active_learning {
     bool learner::is_O_equivalent_(const std::string &word1, const std::string &word2, RST &rst) {
 
         if (mode_ == learner_mode::V1CA) {
-            return is_O_equivalent(word1, word2, rst, v_alphabet_, teacher_);
+            return is_O_equivalent(word1, word2, rst, *as_visibly_alphabet_, teacher_);
         } else if (mode_ == learner_mode::R1CA) {
             return is_O_equivalent(word1, word2, rst, dynamic_cast<automaton_teacher&>(teacher_), teacher_);
         }
