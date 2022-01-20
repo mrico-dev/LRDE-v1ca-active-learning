@@ -2,7 +2,6 @@
 #include <semi_manual_teacher.h>
 #include <automaton_teacher.h>
 #include "language.h"
-#include "manual_teacher.h"
 #include "learner.h"
 
 /**
@@ -58,11 +57,12 @@ bool is_xanybnz(const std::string &word) {
 active_learning::R1CA get_anbam_ref(active_learning::basic_alphabet &alphabet) {
     std::set<size_t> final = {1};
     auto transitions = active_learning::R1CA::transition_func_t();
-    transitions.insert(std::make_pair<active_learning::transition_x, active_learning::transition_y>({0, 0,'a'}, {0, 1}));
-    transitions.insert(std::make_pair<active_learning::transition_x, active_learning::transition_y>({0, 1,'a'}, {0, 1}));
-    transitions.insert(std::make_pair<active_learning::transition_x, active_learning::transition_y>({0, 1,'b'}, {1, 0}));
-    transitions.insert(std::make_pair<active_learning::transition_x, active_learning::transition_y>({1, 0,'a'}, {1, 0}));
-    transitions.insert(std::make_pair<active_learning::transition_x, active_learning::transition_y>({1, 1,'a'}, {1, -1}));
+    transitions.insert(std::make_pair<active_learning::R1CA::transition_x, active_learning::R1CA::transition_y>({0, 0, 'a'}, {0, 1}));
+    transitions.insert(std::make_pair<active_learning::R1CA::transition_x, active_learning::R1CA::transition_y>({0, 1, 'a'}, {0, 1}));
+    transitions.insert(std::make_pair<active_learning::R1CA::transition_x, active_learning::R1CA::transition_y>({0, 1, 'b'}, {1, 0}));
+    transitions.insert(std::make_pair<active_learning::R1CA::transition_x, active_learning::R1CA::transition_y>({1, 0, 'a'}, {1, 0}));
+    transitions.insert(std::make_pair<active_learning::R1CA::transition_x, active_learning::R1CA::transition_y>({1, 1, 'a'}, {1, -1}));
+
     return active_learning::R1CA::from_scratch(0, 2, 0, final, transitions, alphabet);
 }
 
@@ -96,7 +96,7 @@ void learn_r1ca(bool verbose) {
 }
 
 int main() {
-    learn_r1ca(true);
+    learn_v1ca(true);
 
     return 0;
 }

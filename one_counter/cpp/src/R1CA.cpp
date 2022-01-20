@@ -2,11 +2,10 @@
 
 #include <fstream>
 #include <utility>
-#include <V1CA.h>
 
 namespace active_learning {
 
-    bool R1CA::evaluate(const std::string &word) {
+    bool R1CA::evaluate(const std::string &word) const {
         // Starting at initial state with counter = 0
         auto curr_state = init_state_;
         int counter = 0;
@@ -14,12 +13,12 @@ namespace active_learning {
         // Getting from states to states using symbol of the word
         for (char c : word) {
             // FIXME max_lvl_ or max_level_ + 1 (and underneath as well)
-            auto counter_clip = (static_cast<size_t>(counter) > max_lvl_) ? max_lvl_ : counter;
+            auto counter_clip = (static_cast<size_t>(counter) > max_level_) ? max_level_ : counter;
 
             if (not transitions_.contains({curr_state, counter_clip, c}))
                 return false;
 
-            transition_y trans_y = transitions_[{curr_state, counter_clip, c}];
+            transition_y trans_y = transitions_.at({curr_state, counter_clip, c});
             curr_state = trans_y.state;
             counter += trans_y.effect;
 
@@ -30,19 +29,19 @@ namespace active_learning {
         return is_final(curr_state) and not counter;
     }
 
-    int R1CA::count(const std::string &word) {
+    int R1CA::count(const std::string &word) const {
         // Starting at initial state with counter = 0
         auto curr_state = init_state_;
         int counter = 0;
 
         // Getting from states to states using symbol of the word
         for (char c : word) {
-            auto counter_clip = (static_cast<size_t>(counter) > max_lvl_) ? max_lvl_ : counter;
+            auto counter_clip = (static_cast<size_t>(counter) > max_level_) ? max_level_ : counter;
 
             if (not transitions_.contains({curr_state, counter_clip, c}))
                 return -1;
 
-            transition_y trans_y = transitions_[{curr_state, counter_clip, c}];
+            transition_y trans_y = transitions_.at({curr_state, counter_clip, c});
             curr_state = trans_y.state;
             counter += trans_y.effect;
 
@@ -60,7 +59,7 @@ namespace active_learning {
     R1CA::R1CA(basic_alphabet &alphabet) : one_counter_automaton(alphabet, displayable_type::R1CA),
                                            alphabet_(alphabet) {
         states_n_ = 0;
-        max_lvl_ = UINT64_MAX;
+        max_level_ = UINT64_MAX;
     }
 
     bool R1CA::is_final(size_t v) const {
@@ -74,10 +73,12 @@ namespace active_learning {
                std::map<utils::triple_comp<size_t, size_t, char>, utils::pair_comp<bool, size_t>> &colors,
                basic_alphabet &alphabet,
                size_t init_state) : one_counter_automaton(alphabet, displayable_type::R1CA),
-                                    init_state_(init_state),
-                                    states_n_(states),
-                                    max_lvl_(max_level),
                                     alphabet_(alphabet) {
+
+        init_state_ = init_state;
+        states_n_ = states;
+        max_level_ = max_level;
+
         for (auto fs: final_states)
             final_states_.insert(fs);
 
@@ -145,9 +146,13 @@ namespace active_learning {
                     alphabet);
     }
 
-    R1CA::R1CA(alphabet &alphabet, displayable_type dispType, size_t initState, size_t statesN, size_t maxLvl,
-               std::set<size_t> finalStates, R1CA::transition_func_t transitions,
-               basic_alphabet_t &alphabet1) : one_counter_automaton(alphabet, dispType), init_state_(initState),
-                                              states_n_(statesN), max_lvl_(maxLvl), final_states_(std::move(finalStates)),
-                                              transitions_(std::move(transitions)), alphabet_(alphabet1) {}
+    R1CA::R1CA(alphabet &alphabet, displayable_type disp_type, size_t init_state, size_t states_n, size_t maxLvl,
+               std::set<size_t> final_states, R1CA::transition_func_t transitions,
+               basic_alphabet_t &alphabet1) : one_counter_automaton(alphabet, disp_type),
+                                              transitions_(std::move(transitions)), alphabet_(alphabet1) {
+        final_states_ = std::move(final_states);
+        init_state_ = init_state;
+        states_n_ = states_n;
+        max_level_ = maxLvl;
+    }
 }

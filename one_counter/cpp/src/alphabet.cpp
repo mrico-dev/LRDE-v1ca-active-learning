@@ -4,7 +4,7 @@
 #include <iostream>
 
 namespace active_learning {
-    bool basic_alphabet::contains(char symbol) {
+    bool basic_alphabet::contains(char symbol) const {
         return symbols_.contains(symbol);
     }
 
@@ -14,18 +14,18 @@ namespace active_learning {
 
     basic_alphabet::basic_alphabet(std::set<char> symbols) : symbols_(std::move(symbols)) {}
 
-    bool visibly_alphabet::contains(char symbol) {
+    bool visibly_alphabet::contains(char symbol) const {
         return symbols_and_values_.contains(symbol);
     }
 
-    int visibly_alphabet::get_cv(char symbol) {
-        return symbols_and_values_[symbol];
+    int visibly_alphabet::get_cv(char symbol) const {
+        return symbols_and_values_.at(symbol);
     }
 
-    int visibly_alphabet::get_cv(const std::string &word) {
+    int visibly_alphabet::get_cv(const std::string &word) const {
         int res = 0;
         for (char c : word)
-            res += symbols_and_values_[c];
+            res += symbols_and_values_.at(c);
 
         return res;
     }
@@ -42,5 +42,9 @@ namespace active_learning {
     }
 
     visibly_alphabet::visibly_alphabet() = default;
+
+    bool visibly_alphabet::operator==(const visibly_alphabet &other) const {
+        return other.symbols_and_values_ == symbols_and_values_;
+    }
 
 }

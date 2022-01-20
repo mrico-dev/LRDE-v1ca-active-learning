@@ -17,7 +17,7 @@ namespace active_learning {
         explicit basic_alphabet(std::set<char> symbols);
         basic_alphabet() = default;
 
-        bool contains(char symbol);
+        bool contains(char symbol) const;
 
         [[nodiscard]] const std::set<char> &symbols() const override;
 
@@ -31,13 +31,15 @@ namespace active_learning {
 
         visibly_alphabet();
 
-        bool contains(char symbol);
+        bool contains(char symbol) const;
 
-        int get_cv(char symbol);
+        int get_cv(char symbol) const;
 
-        int get_cv(const std::string &word) override;
+        int get_cv(const std::string &word) const override;
 
         [[nodiscard]] const std::set<char> &symbols() const override;
+
+        bool operator==(const visibly_alphabet &other) const;
 
     private:
         std::set<char> symbols_;

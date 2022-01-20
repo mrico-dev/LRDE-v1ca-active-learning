@@ -13,7 +13,7 @@ namespace active_learning {
 
         bool membership_query(const std::string &word) override;
 
-        int count_query(const std::string &word);
+        int count_query(const std::string &word) const;
 
         std::optional<std::string>
         partial_equivalence_query(behaviour_graph &behaviour_graph, const std::string &path) override;
@@ -22,7 +22,7 @@ namespace active_learning {
         equivalence_query(one_counter_automaton &automaton, const std::string &path) override;
 
     private:
-        int get_cv(const std::string &word) override;
+        int get_cv(const std::string &word) const override;
 
         static R1CA &oca_to_r1ca(one_counter_automaton &automaton);
 

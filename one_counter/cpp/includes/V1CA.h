@@ -12,114 +12,78 @@
 
 namespace active_learning {
 
-    struct V1CA_vertex {
-        std::string name = ""; // name must be unique
-        unsigned cv = 0;  // Counter value level
-
-        V1CA_vertex(std::string name, unsigned int cv);
-
-        V1CA_vertex() = default;
-    };
-
-    struct V1CA_edge {
-        char symbol = '\0';
-
-        // Constructor
-        explicit V1CA_edge(char symbol);
-
-        V1CA_edge() = default;
-    };
-
     class V1CA : public one_counter_automaton {
     public:
-        using graph_t = boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, V1CA_vertex, V1CA_edge>;
-        using vertex_descriptor_t = typename boost::graph_traits<graph_t>::vertex_descriptor;
-        using edge_descriptor_t = typename boost::graph_traits<graph_t>::edge_descriptor;
-        using states_t = std::vector<vertex_descriptor_t>;
-        using label_map_t = std::map<unsigned long int, vertex_descriptor_t>;
-        using couples_t = std::vector<std::pair<std::string, std::string>>;
+        enum class transition_color {
+            init,
+            loop_out,           // Getting out of the loop
+            loop_in_top,        // Getting from top to bottom of the loop
+            loop_in_bottom      // Getting from bottom to top of the loop
+        };
 
-        // Cannot use edge descriptor because their value change depending on which graph they're from
-        using graph_color_t = std::set<utils::pair_comp<vertex_descriptor_t, vertex_descriptor_t>>;
-        using graph_colors_t = std::tuple<graph_color_t, // 0: "init edges"
-                graph_color_t, // 1: "loop in no condition"
-                graph_color_t, // 2: "loop in condition"
-                graph_color_t>; // 3: "loop out"
+        struct transition_y {
+            size_t state;
+            transition_color color;
+
+            bool operator==(const transition_y &other) const;
+        };
+
+        struct state_prop {
+            size_t level;
+            std::string name;
+        };
+
+        using transition_func_t = std::map<one_counter_automaton::transition_x, V1CA::transition_y>;
+        using couples_t = std::vector<std::pair<state_t, state_t>>;
+
     private:
-        using looped_edges_t = std::pair<std::vector<V1CA::edge_descriptor_t>, std::vector<V1CA::edge_descriptor_t>>;
+        std::optional<std::string> empty_(std::set<state_t> &visited, state_t curr, std::string curr_word) const;
 
-    private:
-        void link_by_name(std::string, std::string, char symbol);
+        static void inter_with_(const V1CA &automaton1, const V1CA &automaton2,
+                                std::set<V1CA::state_t> &visited1,
+                                std::set<V1CA::state_t> &visited2,
+                                V1CA::state_t curr1, V1CA::state_t curr2,
+                                V1CA &res, V1CA::state_t res_curr) ;
 
-        states_t get_all_states_of_level(unsigned int level);
+        std::vector<std::pair<transition_x, transition_y>> get_out_trans(state_t) const;
 
-        bool empty_(std::set<vertex_descriptor_t> &visited, vertex_descriptor_t curr);
-
-        std::vector<V1CA::edge_descriptor_t> get_transitions_from_state(vertex_descriptor_t from);
+        bool add_transition(const transition_x &x, const transition_y &y);
 
     public:
-        explicit V1CA(visibly_alphabet_t &alphabet);
+        explicit V1CA(const visibly_alphabet_t &alphabet);
 
         V1CA(const V1CA &copy) = default;
 
-        V1CA(std::vector<V1CA_vertex> &states, std::string &initial_state,
-             std::vector<std::string> &final_states, visibly_alphabet_t &alphabet,
-             std::vector<std::tuple<std::string, std::string, char>> &edges);
+        V1CA(std::vector<state_prop> &state_names, state_t initial_state,
+             std::vector<state_t> &final_states, visibly_alphabet_t &alphabet,
+             std::vector<std::tuple<state_t, state_t, char>> &edges);
 
-        graph_t &get_mutable_graph();
+        V1CA inter_with(const V1CA &other) const;
 
-        V1CA_edge get_edge(vertex_descriptor_t src, vertex_descriptor_t dest);
+        V1CA complement() const;
 
-        V1CA inter_with(V1CA &other);
+        std::optional<std::string> empty() const;
 
-        V1CA complement();
+        std::optional<std::string> is_equivalent_to(V1CA &other) const;
 
-        bool empty();
-
-        bool is_equivalent_to(V1CA &other);
-
-        bool is_subset_of(V1CA &other);
+        std::optional<std::string> is_subset_of(const V1CA &other) const;
 
         void display(const std::string &path) override;
 
-        bool is_final(const V1CA_vertex &state);
+        void link_and_color_edges(couples_t &couples);
 
-        bool is_init(const V1CA_vertex &state);
+        state_t add_state(const state_prop &prop);
 
-        std::optional<unsigned long> get_next_index(vertex_descriptor_t state_index, char c);
+        bool accepts(const std::string &word) const;
 
-        std::optional<unsigned long> get_prev_index(vertex_descriptor_t state_index, char c);
-
-        void color_edges(looped_edges_t &new_edges);
-
-        void set_period_cv(int cv);
-
-        void set_periodic(bool periodic);
-
-        void set_colored(bool colored);
-
-        bool colored() const;
-
-        int period_cv() const;
-
-        graph_color_t &get_mutable_init_edge_color();
-
-        graph_color_t &get_mutable_loop_in_no_cond_color();
-
-        graph_color_t &get_mutable_loop_in_with_cond_color();
-
-        graph_color_t &get_mutable_loop_out_color();
-
-        static V1CA::vertex_descriptor_t get_vertex_by_name(V1CA &automaton, const std::string &name);
+        friend class writer;
 
     private:
-        graph_t graph;
-        std::string init_state_;
-        std::unordered_set<std::string> final_states_;
-        graph_colors_t colors_;
-        int period_cv_ = -1;
-        bool periodic_ = false;
-        bool colored_ = false;
+        // Specific to V1CA
+        V1CA::transition_func_t transitions_;
+        visibly_alphabet_t alphabet_;
+        // Additional info
+        std::map<state_t, state_prop> state_props_;
     };
 
 }

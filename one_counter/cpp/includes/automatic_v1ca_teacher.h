@@ -5,12 +5,12 @@
 
 namespace active_learning {
 
-    class automatic_teacher : public cached_teacher {
+    class automatic_v1ca_teacher : public cached_teacher {
     public:
 
-        automatic_teacher(std::function<bool(const std::string &)> checkFunc, behaviour_graph &behaviourRef,
-                          V1CA &automatonRef,
-                          visibly_alphabet_t alphabet);
+        automatic_v1ca_teacher(behaviour_graph &behaviourRef,
+                               V1CA &automatonRef,
+                               visibly_alphabet_t alphabet);
 
         std::optional<std::string>
         partial_equivalence_query(behaviour_graph &behaviour_graph, const std::string &path) override;
@@ -27,7 +27,6 @@ namespace active_learning {
         static V1CA &oca_to_v1ca(one_counter_automaton &v1ca);
 
     private:
-        std::function<bool(const std::string &)> check_func_;
         behaviour_graph &behaviour_ref_;
         V1CA &automaton_ref_;
         visibly_alphabet_t alphabet_;

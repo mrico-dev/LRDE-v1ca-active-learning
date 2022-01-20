@@ -40,22 +40,26 @@ namespace active_learning {
     private:
         using edges_t = std::vector<std::tuple<std::string, char, int, std::string>>;
         using vertexes_t = std::vector<std::pair<std::string, int>>;
-        using edges_descs_t = std::vector<V1CA::edge_descriptor_t>;
-        using looped_edges_t = std::pair<std::vector<V1CA::edge_descriptor_t>, std::vector<V1CA::edge_descriptor_t>>;
+        using new_edges_t = one_counter_automaton::new_edges_t;
         using label_map_t = std::map<unsigned long int, vertex_descriptor_t>;
         using states_t = std::vector<vertex_descriptor_t>;
 
     private:
+        edge_descriptor_t find_edge(vertex_descriptor_t src, vertex_descriptor_t dst);
+
         vertex_descriptor_t find_vertex_by_name(const std::string &name);
 
-        edges_t
+        static edges_t
         get_edges_from_rst(RST &rst, word_counter &wc, vertexes_t &states, teacher &teacher, alphabet &alphabet);
 
         static std::string find_state_from_word(RST &rst, const std::string &state_word, int cv, teacher &teacher);
 
         std::set<edge_descriptor_t> get_edges_from_state(vertex_descriptor_t state);
 
-        looped_edges_t link_period(couples_t &couples);
+        // Deprecated because result of this is incompatible with to_v1ca and to_r1ca
+        new_edges_t link_period(couples_t &couples);
+
+        V1CA::couples_t to_v1ca_couple(couples_t couples);
 
         void delete_high_levels(unsigned int threshold_level);
 
@@ -99,7 +103,7 @@ namespace active_learning {
         R1CA to_r1ca_direct(basic_alphabet &alphabet);
 
         R1CA to_r1ca_direct(basic_alphabet &alphabet,
-                            const looped_edges_t &new_edges,
+                            const new_edges_t &new_edges,
                             size_t new_edge_lvl);
 
         bool is_final(const std::string &v_name);

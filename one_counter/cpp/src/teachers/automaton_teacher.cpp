@@ -9,7 +9,7 @@ namespace active_learning {
         return ref_.evaluate(word);
     }
 
-    int automaton_teacher::count_query(const std::string &word) {
+    int automaton_teacher::count_query(const std::string &word) const {
         return ref_.count(word);
     }
 
@@ -63,7 +63,7 @@ namespace active_learning {
         return *r1ca_ptr;
     }
 
-    int automaton_teacher::get_cv(const std::string &word) {
+    int automaton_teacher::get_cv(const std::string &word) const {
         return count_query(word);
     }
 

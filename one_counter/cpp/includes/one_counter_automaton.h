@@ -6,19 +6,39 @@
 
 namespace active_learning {
 
-    // TODO later when everything works
     class one_counter_automaton : public displayable {
+
+    public:
+        struct transition_x {
+            size_t state;
+            size_t counter;
+            char symbol;
+
+            // Making it comparable so it can fit into a map
+            bool operator==(const transition_x &other) const;
+
+            bool operator<(const transition_x &other) const;
+        };
+
+        using state_t = size_t;
+        using init_trans_t = std::pair<state_t, state_t>;
+        using new_edges_t = std::pair<std::vector<init_trans_t>, std::vector<init_trans_t>>;
 
     protected:
     public:
         one_counter_automaton(alphabet &alphabet, displayable_type disp_type);
 
     protected:
-        virtual void to_delete_later() {}; // So the class is polymorphic
+        virtual void do_nothing() {}; // So the class is polymorphic
 
-        alphabet &get_alphabet();
+    public:
+        const std::set<char> &get_alphabet_symbols();
 
     protected:
         alphabet &alphabet_;
+        state_t init_state_ = 0;
+        size_t states_n_ = 0;
+        size_t max_level_ = 0;
+        std::set<state_t> final_states_;
     };
 }

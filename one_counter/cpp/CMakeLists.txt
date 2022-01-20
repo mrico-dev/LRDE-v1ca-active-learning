@@ -4,16 +4,17 @@ set(src_engine
         src/V1CA.cpp
         src/learner.cpp
         src/language.cpp
-        src/teacher.cpp
+        src/teachers/teacher.cpp
         src/dataframe.cpp
-        src/manual_teacher.cpp
-        src/semi_manual_teacher.cpp
-        src/automatic_teacher.cpp
+        src/teachers/manual_teacher.cpp
+        src/teachers/semi_manual_teacher.cpp
+        src/teachers/automatic_v1ca_teacher.cpp
         src/R1CA.cpp
-        src/automaton_teacher.cpp
+        src/teachers/automaton_teacher.cpp
         src/one_counter_automaton.cpp
         src/behaviour_graph.cpp
         src/alphabet.cpp
+        src/dot_writers.cpp
         )
 
 include_directories(includes)
