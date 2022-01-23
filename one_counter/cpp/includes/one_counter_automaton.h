@@ -34,8 +34,10 @@ namespace active_learning {
     public:
         const std::set<char> &get_alphabet_symbols();
 
+        const alphabet &get_alphabet() const;
+
     protected:
-        alphabet &alphabet_;
+        class alphabet &alphabet_;
         state_t init_state_ = 0;
         size_t states_n_ = 0;
         size_t max_level_ = 0;

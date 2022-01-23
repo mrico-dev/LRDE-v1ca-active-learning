@@ -691,4 +691,10 @@ namespace active_learning {
         throw std::invalid_argument("No edge found for given vertex descriptors");
     }
 
+    behaviour_graph behaviour_graph::from_v1ca(const V1CA &v1ca) {
+        // TODO
+        (void) v1ca;
+        return behaviour_graph();
+    }
+
 }

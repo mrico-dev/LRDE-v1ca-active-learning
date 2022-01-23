@@ -42,6 +42,7 @@ namespace active_learning {
         static void inter_with_(const V1CA &automaton1, const V1CA &automaton2,
                                 std::set<V1CA::state_t> &visited1,
                                 std::set<V1CA::state_t> &visited2,
+                                std::map<V1CA::state_t, V1CA::state_t> &auto1_state_to_res_state,
                                 V1CA::state_t curr1, V1CA::state_t curr2,
                                 V1CA &res, V1CA::state_t res_curr) ;
 
@@ -49,7 +50,10 @@ namespace active_learning {
 
         bool add_transition(const transition_x &x, const transition_y &y);
 
+        void increase_max_level();
+
     public:
+        // Constructors
         explicit V1CA(const visibly_alphabet_t &alphabet);
 
         V1CA(const V1CA &copy) = default;
@@ -58,6 +62,7 @@ namespace active_learning {
              std::vector<state_t> &final_states, visibly_alphabet_t &alphabet,
              std::vector<std::tuple<state_t, state_t, char>> &edges);
 
+        // Operators
         V1CA inter_with(const V1CA &other) const;
 
         V1CA complement() const;
@@ -68,15 +73,19 @@ namespace active_learning {
 
         std::optional<std::string> is_subset_of(const V1CA &other) const;
 
+        bool accepts(const std::string &word) const;
+
+        // Display
         void display(const std::string &path) override;
 
+        friend class writer;
+
+        // Modifiers
         void link_and_color_edges(couples_t &couples);
 
         state_t add_state(const state_prop &prop);
 
-        bool accepts(const std::string &word) const;
-
-        friend class writer;
+        void increase_max_level(size_t n);
 
     private:
         // Specific to V1CA

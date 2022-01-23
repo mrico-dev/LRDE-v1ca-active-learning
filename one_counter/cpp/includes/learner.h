@@ -2,9 +2,9 @@
 
 #include "V1CA.h"
 #include "R1CA.h"
-#include "teacher.h"
+#include "teachers/teacher.h"
 #include "dataframe.h"
-#include "automaton_teacher.h"
+#include "teachers/automaton_teacher.h"
 
 namespace active_learning {
 

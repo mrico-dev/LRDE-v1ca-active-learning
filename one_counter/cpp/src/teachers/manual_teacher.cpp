@@ -1,4 +1,4 @@
-#include "manual_teacher.h"
+#include "teachers/manual_teacher.h"
 
 namespace active_learning {
 

@@ -1,5 +1,5 @@
 #include <iostream>
-#include "automaton_teacher.h"
+#include "teachers/automaton_teacher.h"
 #include "language.h"
 #include "behaviour_graph.h"
 

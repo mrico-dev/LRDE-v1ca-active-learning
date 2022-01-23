@@ -4,7 +4,7 @@
 #include "language.h"
 
 #include <iostream>
-#include <automaton_teacher.h>
+#include <teachers/automaton_teacher.h>
 
 namespace active_learning {
 

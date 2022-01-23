@@ -1,6 +1,6 @@
 
-#include <semi_manual_teacher.h>
-#include <automaton_teacher.h>
+#include <teachers/semi_manual_teacher.h>
+#include <teachers/automaton_teacher.h>
 #include "language.h"
 #include "learner.h"
 

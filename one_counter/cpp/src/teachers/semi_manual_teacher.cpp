@@ -1,4 +1,4 @@
-#include "semi_manual_teacher.h"
+#include "teachers/semi_manual_teacher.h"
 
 #include <utility>
 

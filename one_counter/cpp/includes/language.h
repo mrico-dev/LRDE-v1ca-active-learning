@@ -5,7 +5,7 @@
 #include <set>
 #include <vector>
 
-#include "teacher.h"
+#include "teachers/teacher.h"
 #include "alphabet.h"
 #include "dataframe.h"
 

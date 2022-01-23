@@ -4,7 +4,7 @@
 #include <string>
 #include <map>
 
-#include "teacher.h"
+#include "teachers/teacher.h"
 
 namespace active_learning {
 

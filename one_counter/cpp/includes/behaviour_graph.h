@@ -114,6 +114,8 @@ namespace active_learning {
         is_isomorphic_to(behaviour_graph &other, unsigned int from_level1, unsigned int from_level2,
                          alphabet &alphabet);
 
+        static behaviour_graph from_v1ca(const V1CA &v1ca);
+
     private:
         graph_t graph_;
         std::string init_state_;

@@ -2,14 +2,14 @@
 
 #include "teacher.h"
 #include "V1CA.h"
+#include "behaviour_graph.h"
 
 namespace active_learning {
 
     class automatic_v1ca_teacher : public cached_teacher {
     public:
 
-        automatic_v1ca_teacher(behaviour_graph &behaviourRef,
-                               V1CA &automatonRef,
+        automatic_v1ca_teacher(V1CA &automatonRef,
                                visibly_alphabet_t alphabet);
 
         std::optional<std::string>
@@ -22,12 +22,10 @@ namespace active_learning {
         bool membership_query_(const std::string &word) override;
 
     private:
-        std::string find_counter_example(V1CA &automaton);
-
         static V1CA &oca_to_v1ca(one_counter_automaton &v1ca);
 
     private:
-        behaviour_graph &behaviour_ref_;
+        std::unique_ptr<behaviour_graph> behaviour_ref_ = nullptr;
         V1CA &automaton_ref_;
         visibly_alphabet_t alphabet_;
     };

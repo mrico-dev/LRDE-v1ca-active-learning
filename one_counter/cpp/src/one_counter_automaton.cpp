@@ -6,8 +6,12 @@ namespace active_learning {
         return alphabet_.symbols();
     }
 
-    one_counter_automaton::one_counter_automaton(alphabet &alphabet, displayable_type disp_type) :
+    one_counter_automaton::one_counter_automaton(class alphabet &alphabet, displayable_type disp_type) :
                                                                 displayable(disp_type), alphabet_(alphabet) {}
+
+    const alphabet &one_counter_automaton::get_alphabet() const {
+        return alphabet_;
+    }
 
     bool one_counter_automaton::transition_x::operator==(const one_counter_automaton::transition_x &other) const {
         return other.state == state
