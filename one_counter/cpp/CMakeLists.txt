@@ -15,6 +15,7 @@ set(src_engine
         src/behaviour_graph.cpp
         src/alphabet.cpp
         src/dot_writers.cpp
+        src/V1CA_reader.cpp
         )
 
 include_directories(includes)

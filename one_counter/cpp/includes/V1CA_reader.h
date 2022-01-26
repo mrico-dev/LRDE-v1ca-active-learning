@@ -4,5 +4,5 @@
 
 namespace active_learning {
 
-    V1CA read_v1ca_from_file(const std::string &path);
+    V1CA read_v1ca_from_file(const std::string &path, const visibly_alphabet_t &alphabet);
 }

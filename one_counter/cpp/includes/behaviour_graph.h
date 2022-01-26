@@ -56,7 +56,7 @@ namespace active_learning {
 
         std::set<edge_descriptor_t> get_edges_from_state(vertex_descriptor_t state);
 
-        // Deprecated because result of this is incompatible with to_v1ca and to_r1ca
+        // Deprecated because result of this is incompatible with to_v1ca() and to_r1ca()
         new_edges_t link_period(couples_t &couples);
 
         V1CA::couples_t to_v1ca_couple(couples_t couples);

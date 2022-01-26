@@ -62,6 +62,8 @@ namespace active_learning {
              std::vector<state_t> &final_states, visibly_alphabet_t &alphabet,
              std::vector<std::tuple<state_t, state_t, char>> &edges);
 
+        friend class behaviour_graph;
+
         // Operators
         V1CA inter_with(const V1CA &other) const;
 
@@ -79,6 +81,8 @@ namespace active_learning {
         void display(const std::string &path) override;
 
         friend class writer;
+
+        friend V1CA read_v1ca_from_file(const std::string &path, const visibly_alphabet_t &alphabet);
 
         // Modifiers
         void link_and_color_edges(couples_t &couples);

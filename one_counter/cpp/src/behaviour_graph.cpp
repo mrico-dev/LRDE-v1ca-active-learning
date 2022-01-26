@@ -495,7 +495,7 @@ namespace active_learning {
 
         for (const auto &e: couples) {
             res.push_back({static_cast<V1CA::state_t>(find_vertex_by_name(e.first)),
-                             static_cast<V1CA::state_t>(find_vertex_by_name(e.second))});
+                           static_cast<V1CA::state_t>(find_vertex_by_name(e.second))});
         }
 
         return res;
@@ -522,7 +522,7 @@ namespace active_learning {
                     if (verbose) {
                         std::cout << "Periodic pattern found between level " << m << " and " << m + k << ".\n";
                         std::cout << "Couples are: ";
-                        for (const auto& couple : couples.value())
+                        for (const auto &couple : couples.value())
                             std::cout << '(' << couple.first << ", " << couple.second << ")";
                         std::cout << "\nMax level is " << m + k << "." << std::endl;
                     }
@@ -566,8 +566,8 @@ namespace active_learning {
         for (auto ep = boost::edges(graph_); ep.first != ep.second; ++ep.first) {
             auto prop = graph_[*ep.first];
             transitions.emplace_back(std::make_tuple(boost::source(*ep.first, graph_),
-                                               boost::target(*ep.first, graph_),
-                                               prop.symbol));
+                                                     boost::target(*ep.first, graph_),
+                                                     prop.symbol));
             std::cout << "(" << boost::source(*ep.first, graph_) << " " << boost::target(*ep.first, graph_) << ") ";
         }
         std::cout << '\n';
@@ -575,7 +575,8 @@ namespace active_learning {
         return V1CA(states_props, 0lu, finals, alphabet, transitions);
     }
 
-    R1CA behaviour_graph::to_r1ca_direct(basic_alphabet &alphabet, const behaviour_graph::new_edges_t &new_edges, size_t new_edge_lvl) {
+    R1CA behaviour_graph::to_r1ca_direct(basic_alphabet &alphabet, const behaviour_graph::new_edges_t &new_edges,
+                                         size_t new_edge_lvl) {
         auto vertices = boost::vertices(graph_);
         auto states = static_cast<size_t>(vertices.second - vertices.first);
 
@@ -634,7 +635,7 @@ namespace active_learning {
                     if (verbose) {
                         std::cout << "Periodic pattern found between level " << m << " and " << m + k << ".\n";
                         std::cout << "Couples are: ";
-                        for (const auto& couple : couples.value())
+                        for (const auto &couple : couples.value())
                             std::cout << '(' << couple.first << ", " << couple.second << ")";
                         std::cout << "\n";
                     }
@@ -692,9 +693,44 @@ namespace active_learning {
     }
 
     behaviour_graph behaviour_graph::from_v1ca(const V1CA &v1ca) {
-        // TODO
-        (void) v1ca;
-        return behaviour_graph();
+        auto behaviour_v1ca = V1CA(v1ca);
+
+        // Removing loop-ins
+        for (auto state = 0u; state < behaviour_v1ca.states_n_; ++state) {
+            if (behaviour_v1ca.state_props_.at(state).level == behaviour_v1ca.max_level_) {
+                auto out_trans = behaviour_v1ca.get_out_trans(state);
+                for (auto trans: out_trans) {
+                    if (behaviour_v1ca.alphabet_.get_cv(trans.first.symbol) > 0) {
+                        behaviour_v1ca.transitions_.erase(trans.first);
+                    }
+                }
+            }
+        }
+
+        auto vertexes = vertexes_t();
+        for (auto i = 0u; i < behaviour_v1ca.states_n_; ++i) {
+            auto prop = behaviour_v1ca.state_props_.at(i);
+            vertexes.emplace_back(prop.name, prop.level);
+        }
+
+        auto edges = edges_t();
+        for (auto trans : behaviour_v1ca.transitions_) {
+            const auto &from = behaviour_v1ca.state_props_.at(trans.first.state).name;
+            const auto &to = behaviour_v1ca.state_props_.at(trans.second.state).name;
+            const auto &symbol = trans.first.symbol;
+            const auto &effect = behaviour_v1ca.alphabet_.get_cv(symbol);
+
+            edges.emplace_back(from, symbol, effect, to);
+        }
+
+        auto finals = std::set<std::string>();
+        for (auto final : behaviour_v1ca.final_states_) {
+            finals.insert(behaviour_v1ca.state_props_.at(final).name);
+        }
+
+        auto init = behaviour_v1ca.state_props_.at(behaviour_v1ca.init_state_).name;
+
+        return behaviour_graph(vertexes, edges, init, finals);
     }
 
 }
