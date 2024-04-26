@@ -3,7 +3,7 @@
 
 The repository contains most of the work done at LRDE on the subject of "Active Learing on Visibly One-Counter Systems".
 
-The goal of the program is to be able to get a Visibly One-Counter Automaton from a teacher who has knowledge over a language. The explanation of the algorithm can be found in the *Report.pdf* file
+The goal of the program is to build a Visibly One-Counter Automaton from a teacher who has knowledge over a language. The explanation of the algorithm can be found in the *Report.pdf* file
 
 The *angluin_regular/* directory contains a python version of Angluin's algorithm working on regular languages.
 The *one_counter/* directory contains two sub-directories: the *python/* and *cpp/* directories. They contain a Python and C++ implementation of the algorithm.
